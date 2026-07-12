@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { defaultAbout, defaultBearers, type AboutContent, type Bearer } from "@/data/siteContent";
 
 const founders = [
@@ -140,6 +142,14 @@ export function About({
                 {f}
               </span>
             ))}
+          </div>
+          <div className="mt-8">
+            <Link
+              to="/members"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-ink text-white font-medium rounded-sm hover:bg-charcoal transition-colors"
+            >
+              Meet All Our Members <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
 
