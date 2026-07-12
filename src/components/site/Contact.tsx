@@ -19,7 +19,7 @@ export function Contact() {
           <div className="lg:col-span-7 grid sm:grid-cols-2 gap-5" data-reveal data-reveal-delay="150">
             <ContactCard icon={<Mail />} label="Email" value="globaltravelsassociation@gmail.com" href="mailto:globaltravelsassociation@gmail.com" />
             <ContactCard icon={<Globe />} label="Website" value="www.globaltravelassociation.com" href="https://www.globaltravelassociation.com" />
-            <ContactCard icon={<Phone />} label="Phone" value="[Phone Number]" />
+            <ContactCard icon={<Phone />} label="Phone" value="+91 9009661010" href="tel:+919009661010" />
             <ContactCard icon={<MapPin />} label="Address" value="Raipur, Chhattisgarh, India" />
 
             <div className="sm:col-span-2 bg-white p-6 border border-ink/5">
