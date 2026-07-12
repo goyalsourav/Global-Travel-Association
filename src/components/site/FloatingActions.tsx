@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUp, MessageCircle } from "lucide-react";
 
-const WHATSAPP_NUMBER = "919999999999"; // TODO: replace with real GTA WhatsApp number
+const WHATSAPP_NUMBER = "919009661010";
 
 export function FloatingActions() {
   const [showTop, setShowTop] = useState(false);

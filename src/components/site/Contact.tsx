@@ -21,34 +21,11 @@ export function Contact({ contact = defaultContact }: { contact?: ContactContent
             </p>
           </div>
 
-          <div
-            className="lg:col-span-7 grid sm:grid-cols-2 gap-5"
-            data-reveal
-            data-reveal-delay="150"
-          >
-            <ContactCard
-              icon={<Mail />}
-              label="Email"
-              value={contact.email}
-              href={`mailto:${contact.email}`}
-            />
-            <ContactCard
-              icon={<Globe />}
-              label="Website"
-              value={websiteLabel}
-              href={contact.website}
-            />
-            <ContactCard
-              icon={<Phone />}
-              label="Phone"
-              value={contact.phone}
-              href={
-                /^[\d+\s-]+$/.test(contact.phone)
-                  ? `tel:${contact.phone.replace(/\s/g, "")}`
-                  : undefined
-              }
-            />
-            <ContactCard icon={<MapPin />} label="Address" value={contact.address} />
+          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-5" data-reveal data-reveal-delay="150">
+            <ContactCard icon={<Mail />} label="Email" value="globaltravelsassociation@gmail.com" href="mailto:globaltravelsassociation@gmail.com" />
+            <ContactCard icon={<Globe />} label="Website" value="www.globaltravelassociation.com" href="https://www.globaltravelassociation.com" />
+            <ContactCard icon={<Phone />} label="Phone" value="[Phone Number]" />
+            <ContactCard icon={<MapPin />} label="Address" value="Raipur, Chhattisgarh, India" />
 
             <div className="sm:col-span-2 bg-white p-6 border border-ink/5">
               <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">
