@@ -1,4 +1,4 @@
-import { Mail, Globe, Phone, MapPin, Linkedin, Instagram } from "lucide-react";
+import { Mail, Globe, Phone, MapPin, Instagram } from "lucide-react";
 
 export function Contact() {
   return (
@@ -25,8 +25,11 @@ export function Contact() {
             <div className="sm:col-span-2 bg-white p-6 border border-ink/5">
               <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">Follow the Association</div>
               <div className="flex gap-3">
-                <SocialButton icon={<Linkedin className="h-5 w-5" />} label="LinkedIn" />
-                <SocialButton icon={<Instagram className="h-5 w-5" />} label="Instagram" />
+                <SocialButton
+                  icon={<Instagram className="h-5 w-5" />}
+                  label="Instagram"
+                  href="https://www.instagram.com/global_travel_aassociation?igsh=YTRveHdtNmJpN3Vp&utm_source=qr"
+                />
               </div>
             </div>
 
@@ -61,7 +64,20 @@ function ContactCard({ icon, label, value, href }: { icon: React.ReactNode; labe
   );
 }
 
-function SocialButton({ icon, label }: { icon: React.ReactNode; label: string }) {
+function SocialButton({ icon, label, href }: { icon: React.ReactNode; label: string; href?: string }) {
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={label}
+        className="grid h-11 w-11 place-items-center border border-ink/15 text-ink hover:bg-ink hover:text-gold transition-colors rounded-sm"
+      >
+        {icon}
+      </a>
+    );
+  }
   return (
     <button
       aria-label={label}
