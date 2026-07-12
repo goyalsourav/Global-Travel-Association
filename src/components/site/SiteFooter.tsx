@@ -3,13 +3,12 @@ export function SiteFooter() {
     <footer className="bg-ink text-white border-t border-white/5">
       <div className="container-page py-16 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center">
             <img
-              src="/globe.png"
-              alt="Global Travel Association Logo"
-              className="h-10 w-auto object-contain"
+              src="/logo.png"
+              alt="Global Travel Association"
+              className="h-14 w-auto object-contain"
             />
-            <span className="font-serif text-lg tracking-wide">Global Travel Association</span>
           </div>
           <p className="mt-4 italic text-gold font-serif">Integrate — Innovate — Inspire</p>
           <p className="mt-4 max-w-md text-sm text-white/60 leading-relaxed">
