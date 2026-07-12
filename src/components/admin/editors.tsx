@@ -202,7 +202,12 @@ export function AboutEditor({
     >
       <SectionHeading
         title="About the Association"
-        note="This copy appears in the “About the Association” section on the homepage."
+        note="The copy and photo shown in the “About the Association” section on the homepage."
+      />
+      <ImagePicker
+        label="Section image"
+        value={about.image}
+        onChange={(url) => setAbout({ ...about, image: url })}
       />
       <div>
         <label className={labelCls}>Introduction</label>

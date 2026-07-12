@@ -51,11 +51,19 @@ export const getSiteContent = createServerFn({ method: "GET" }).handler(
         value: unknown;
       }[];
       const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+      // Spread stored values over the defaults so rows saved before a field
+      // existed (e.g. about.image) still pick up the default for it.
       return {
-        about: (byKey.about as AboutContent) ?? defaultSiteContent.about,
+        about: { ...defaultSiteContent.about, ...((byKey.about as Partial<AboutContent>) ?? {}) },
         bearers: (byKey.bearers as Bearer[]) ?? defaultSiteContent.bearers,
-        contact: (byKey.contact as ContactContent) ?? defaultSiteContent.contact,
-        payment: (byKey.payment as PaymentContent) ?? defaultSiteContent.payment,
+        contact: {
+          ...defaultSiteContent.contact,
+          ...((byKey.contact as Partial<ContactContent>) ?? {}),
+        },
+        payment: {
+          ...defaultSiteContent.payment,
+          ...((byKey.payment as Partial<PaymentContent>) ?? {}),
+        },
       };
     } catch (err) {
       console.error("getSiteContent failed, using defaults:", err);

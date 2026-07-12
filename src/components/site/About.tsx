@@ -49,7 +49,7 @@ export function About({
           <div className="lg:col-span-5" data-reveal>
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80"
+                src={about.image}
                 alt="GTA leadership and members convened at a professional gathering"
                 className="w-full aspect-[4/5] object-cover rounded-sm"
                 loading="lazy"

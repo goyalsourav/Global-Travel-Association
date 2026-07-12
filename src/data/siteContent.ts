@@ -6,6 +6,7 @@ export type AboutContent = {
   intro: string;
   vision: string;
   mission: string;
+  image: string;
 };
 
 export type Bearer = {
@@ -54,6 +55,8 @@ export const defaultAbout: AboutContent = {
     "To become India's most trusted and respected association of travel agencies, building a strong national network with meaningful global partnerships that inspire growth, innovation, and excellence across the travel industry.",
   mission:
     "To connect travel agencies through a professional and ethical platform that encourages collaboration, continuous learning, and sustainable business growth — creating networking opportunities, industry events and FAM trips, promoting responsible tourism, and representing India's travel agency community nationally and internationally.",
+  image:
+    "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
 };
 
 export const defaultBearers: Bearer[] = [
