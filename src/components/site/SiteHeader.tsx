@@ -26,14 +26,19 @@ export function SiteHeader() {
       }`}
     >
       <div className="container-page flex h-20 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-3 group">
           <img
-            src="/logo.png"
-            alt="Global Travel Association"
-            className="h-11 w-auto object-contain transition-opacity group-hover:opacity-90"
+            src="/globe.png"
+            alt="Global Travel Association Logo"
+            className="h-10 w-auto object-contain transition-opacity group-hover:opacity-90"
           />
-          <span className="hidden sm:flex flex-col leading-tight ml-2">
-            <span className="text-[9px] uppercase tracking-[0.25em] text-gold/80">Integrate · Innovate · Inspire</span>
+          <span className="flex flex-col leading-tight">
+            <span className="font-serif text-lg text-white tracking-wide transition-colors group-hover:text-gold">
+              Global Travel Association
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.28em] text-gold/80">
+              Integrate · Innovate · Inspire
+            </span>
           </span>
         </Link>
 
