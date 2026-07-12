@@ -12,18 +12,39 @@ export function SiteFooter() {
           </div>
           <p className="mt-4 italic text-gold font-serif">Integrate — Innovate — Inspire</p>
           <p className="mt-4 max-w-md text-sm text-white/60 leading-relaxed">
-            An India-based association of travel agencies established in 2026,
-            headquartered in Raipur, Chhattisgarh — expanding PAN India.
+            An India-based association of travel agencies established in 2026, headquartered in
+            Raipur, Chhattisgarh — expanding PAN India.
           </p>
         </div>
 
         <div>
           <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">Explore</div>
           <ul className="space-y-2 text-sm">
-            <li><a href="#about" className="text-white/70 hover:text-gold">About</a></li>
-            <li><a href="#activities" className="text-white/70 hover:text-gold">Activities</a></li>
-            <li><a href="#membership" className="text-white/70 hover:text-gold">Membership</a></li>
-            <li><a href="#contact" className="text-white/70 hover:text-gold">Contact</a></li>
+            <li>
+              <a href="#about" className="text-white/70 hover:text-gold">
+                About
+              </a>
+            </li>
+            <li>
+              <a href="#activities" className="text-white/70 hover:text-gold">
+                Activities
+              </a>
+            </li>
+            <li>
+              <a href="#membership" className="text-white/70 hover:text-gold">
+                Membership
+              </a>
+            </li>
+            <li>
+              <a href="/members" className="text-white/70 hover:text-gold">
+                Members
+              </a>
+            </li>
+            <li>
+              <a href="#contact" className="text-white/70 hover:text-gold">
+                Contact
+              </a>
+            </li>
           </ul>
         </div>
 
@@ -31,7 +52,14 @@ export function SiteFooter() {
           <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">Contact</div>
           <ul className="space-y-2 text-sm text-white/70">
             <li>Raipur, Chhattisgarh, India</li>
-            <li><a href="mailto:globaltravelsassociation@gmail.com" className="hover:text-gold break-all">globaltravelsassociation@gmail.com</a></li>
+            <li>
+              <a
+                href="mailto:globaltravelsassociation@gmail.com"
+                className="hover:text-gold break-all"
+              >
+                globaltravelsassociation@gmail.com
+              </a>
+            </li>
             <li>www.globaltravelassociation.com</li>
           </ul>
         </div>

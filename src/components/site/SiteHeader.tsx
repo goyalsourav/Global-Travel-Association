@@ -45,6 +45,12 @@ export function SiteHeader() {
             </a>
           ))}
           <Link
+            to="/members"
+            className="text-sm text-white/80 hover:text-gold transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-gold hover:after:w-full after:transition-all"
+          >
+            Members
+          </Link>
+          <Link
             to="/join"
             className="text-sm font-medium px-5 py-2.5 bg-gold text-ink hover:bg-gold-soft transition-colors rounded-sm"
           >
@@ -83,6 +89,13 @@ export function SiteHeader() {
                 {l.label}
               </a>
             ))}
+            <Link
+              to="/members"
+              onClick={() => setOpen(false)}
+              className="py-3 text-white/80 hover:text-gold border-b border-white/5"
+            >
+              Members
+            </Link>
             <Link
               to="/join"
               onClick={() => setOpen(false)}

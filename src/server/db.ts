@@ -47,6 +47,24 @@ export function getDb() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
       `;
+      await sql`
+        ALTER TABLE membership_applications
+        ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'submitted'
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS members (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          firm_name TEXT NOT NULL DEFAULT '',
+          contact TEXT NOT NULL DEFAULT '',
+          email TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'active',
+          payment_status TEXT NOT NULL DEFAULT 'pending',
+          paid_at TIMESTAMPTZ,
+          application_id INTEGER,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `;
     })().catch((err) => {
       schemaReady = null;
       throw err;

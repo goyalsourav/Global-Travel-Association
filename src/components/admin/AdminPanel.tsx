@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Loader2, Lock, LogOut } from "lucide-react";
-import { adminVerify, getEvents, getSiteContent } from "@/lib/api";
-import type { GtaEvent, SiteContent } from "@/data/siteContent";
 import {
-  AboutEditor,
-  BearersEditor,
-  ContactEditor,
-  EventsEditor,
-  ApplicationsViewer,
-} from "./editors";
+  adminGetMembers,
+  adminVerify,
+  getApplications,
+  getEvents,
+  getSiteContent,
+  type ApplicationRecord,
+} from "@/lib/api";
+import type { GtaEvent, SiteContent } from "@/data/siteContent";
+import type { Member } from "@/data/members";
+import { AboutEditor, BearersEditor, ContactEditor, EventsEditor } from "./editors";
+import { ApplicationsManager, MembersManager } from "./membersAdmin";
 
 const AUTH_KEY = "gta-admin-auth";
 
-const TABS = ["About", "Office Bearers", "Events", "Contact", "Applications"] as const;
+const TABS = ["Applications", "Members", "Events", "About", "Office Bearers", "Contact"] as const;
 type Tab = (typeof TABS)[number];
 
 export function AdminPanel() {
@@ -120,21 +123,30 @@ function PasswordGate({ onSuccess }: { onSuccess: (pw: string) => void }) {
 }
 
 function Dashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<Tab>("About");
+  const [tab, setTab] = useState<Tab>("Applications");
   const [content, setContent] = useState<SiteContent | null>(null);
   const [events, setEvents] = useState<GtaEvent[] | null>(null);
+  const [members, setMembers] = useState<Member[] | null>(null);
+  const [applications, setApplications] = useState<ApplicationRecord[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getSiteContent(), getEvents()])
-      .then(([c, e]) => {
+    Promise.all([
+      getSiteContent(),
+      getEvents(),
+      adminGetMembers({ data: { password } }),
+      getApplications({ data: { password } }),
+    ])
+      .then(([c, e, m, a]) => {
         setContent(c);
         setEvents(e);
+        setMembers(m);
+        setApplications(a);
       })
       .catch((err) =>
         setLoadError(err instanceof Error ? err.message : "Failed to load site content"),
       );
-  }, []);
+  }, [password]);
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -176,7 +188,7 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
         </div>
       </nav>
 
-      <main className="container-page py-10 max-w-4xl">
+      <main className="container-page py-10 max-w-5xl">
         {loadError && (
           <p
             role="alert"
@@ -185,12 +197,29 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
             {loadError} — check that DATABASE_URL is configured.
           </p>
         )}
-        {!content || !events ? (
+        {!content || !events || !members || !applications ? (
           <div className="flex items-center gap-2 text-charcoal py-16 justify-center">
             <Loader2 className="h-5 w-5 animate-spin" /> Loading content…
           </div>
         ) : (
           <>
+            {tab === "Applications" && (
+              <ApplicationsManager
+                password={password}
+                applications={applications}
+                setApplications={setApplications}
+                members={members}
+                setMembers={setMembers}
+              />
+            )}
+            {tab === "Members" && (
+              <MembersManager
+                password={password}
+                members={members}
+                setMembers={setMembers}
+                applications={applications}
+              />
+            )}
             {tab === "About" && (
               <AboutEditor
                 password={password}
@@ -215,7 +244,6 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
                 onSaved={(contact) => setContent({ ...content, contact })}
               />
             )}
-            {tab === "Applications" && <ApplicationsViewer password={password} />}
           </>
         )}
       </main>

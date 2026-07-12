@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as MembersRouteImport } from './routes/members'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivitiesRouteImport } from './routes/activities'
@@ -19,6 +20,11 @@ import { Route as ApiBlobUploadRouteImport } from './routes/api/blob-upload'
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembersRoute = MembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JoinRoute = JoinRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/activities': typeof ActivitiesRoute
   '/admin': typeof AdminRoute
   '/join': typeof JoinRoute
+  '/members': typeof MembersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/blob-upload': typeof ApiBlobUploadRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/activities': typeof ActivitiesRoute
   '/admin': typeof AdminRoute
   '/join': typeof JoinRoute
+  '/members': typeof MembersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/blob-upload': typeof ApiBlobUploadRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/activities': typeof ActivitiesRoute
   '/admin': typeof AdminRoute
   '/join': typeof JoinRoute
+  '/members': typeof MembersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/blob-upload': typeof ApiBlobUploadRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/activities'
     | '/admin'
     | '/join'
+    | '/members'
     | '/sitemap.xml'
     | '/api/blob-upload'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/activities'
     | '/admin'
     | '/join'
+    | '/members'
     | '/sitemap.xml'
     | '/api/blob-upload'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/activities'
     | '/admin'
     | '/join'
+    | '/members'
     | '/sitemap.xml'
     | '/api/blob-upload'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   ActivitiesRoute: typeof ActivitiesRoute
   AdminRoute: typeof AdminRoute
   JoinRoute: typeof JoinRoute
+  MembersRoute: typeof MembersRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiBlobUploadRoute: typeof ApiBlobUploadRoute
 }
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/members': {
+      id: '/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof MembersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/join': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivitiesRoute: ActivitiesRoute,
   AdminRoute: AdminRoute,
   JoinRoute: JoinRoute,
+  MembersRoute: MembersRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiBlobUploadRoute: ApiBlobUploadRoute,
 }

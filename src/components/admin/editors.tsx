@@ -1,22 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronUp, Loader2, Plus, Trash2, Upload } from "lucide-react";
-import {
-  createEvent,
-  deleteEvent,
-  getApplications,
-  saveSiteContent,
-  updateEvent,
-  type ApplicationData,
-  type ApplicationRecord,
-} from "@/lib/api";
+import { Check, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { createEvent, deleteEvent, saveSiteContent, updateEvent } from "@/lib/api";
 import { formatBytes, MAX_FILE_BYTES, uploadFile } from "@/lib/uploadFile";
 import type { AboutContent, Bearer, ContactContent, GtaEvent } from "@/data/siteContent";
 
-const inputCls =
+export const inputCls =
   "w-full bg-white border border-ink/15 focus:border-gold outline-none rounded-sm px-4 py-3 text-ink transition-colors placeholder:text-charcoal/40";
-const labelCls = "block text-xs uppercase tracking-[0.22em] text-charcoal mb-2";
+export const labelCls = "block text-xs uppercase tracking-[0.22em] text-charcoal mb-2";
 
-function SectionHeading({ title, note }: { title: string; note: string }) {
+export function SectionHeading({ title, note }: { title: string; note: string }) {
   return (
     <div className="mb-8">
       <h2 className="font-serif text-3xl text-ink">{title}</h2>
@@ -78,7 +70,7 @@ function useSaver<T>(save: (value: T) => Promise<void>) {
   return { busy, saved, error, run };
 }
 
-function ErrorNote({ error }: { error: string | null }) {
+export function ErrorNote({ error }: { error: string | null }) {
   if (!error) return null;
   return (
     <p role="alert" className="mt-3 text-sm text-destructive">
@@ -532,109 +524,4 @@ export function ContactEditor({
   );
 }
 
-/* ---------- Applications ---------- */
-
-export function ApplicationsViewer({ password }: { password: string }) {
-  const [apps, setApps] = useState<ApplicationRecord[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<number | null>(null);
-
-  useEffect(() => {
-    getApplications({ data: { password } })
-      .then(setApps)
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load applications"));
-  }, [password]);
-
-  if (error) return <ErrorNote error={error} />;
-  if (!apps)
-    return (
-      <div className="flex items-center gap-2 text-charcoal py-16 justify-center">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading applications…
-      </div>
-    );
-
-  return (
-    <div>
-      <SectionHeading
-        title={`Membership Applications (${apps.length})`}
-        note="Submitted through the “Become a Member” form."
-      />
-      {apps.length === 0 && <p className="text-sm text-charcoal">No applications yet.</p>}
-      <ul className="space-y-3">
-        {apps.map((app) => (
-          <li key={app.id} className="bg-white border border-ink/10 rounded-sm">
-            <button
-              onClick={() => setOpenId(openId === app.id ? null : app.id)}
-              className="w-full flex items-center gap-4 p-4 text-left"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="font-medium text-ink truncate">{app.name || app.email}</div>
-                <div className="text-xs text-charcoal/70">
-                  {app.email} ·{" "}
-                  {new Date(app.createdAt).toLocaleString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              </div>
-              {openId === app.id ? (
-                <ChevronUp className="h-4 w-4 text-charcoal" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-charcoal" />
-              )}
-            </button>
-            {openId === app.id && <ApplicationDetail data={app.data} />}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function ApplicationDetail({ data }: { data: ApplicationData }) {
-  const values = data.values ?? {};
-  const files = data.files ?? {};
-
-  return (
-    <div className="border-t border-ink/10 p-4">
-      <dl className="space-y-1.5">
-        {Object.entries(values).map(([key, val]) => {
-          const text = Array.isArray(val) ? val.join(", ") : String(val ?? "");
-          if (!text) return null;
-          return (
-            <div key={key} className="flex flex-col sm:flex-row sm:gap-4 text-sm">
-              <dt className="text-xs uppercase tracking-wider text-charcoal/60 sm:w-44 shrink-0 pt-0.5">
-                {key.replace(/([A-Z])/g, " $1")}
-              </dt>
-              <dd className="text-ink break-words">{text}</dd>
-            </div>
-          );
-        })}
-      </dl>
-      {Object.keys(files).length > 0 && (
-        <div className="mt-4">
-          <div className="text-xs uppercase tracking-[0.22em] text-gold mb-2">Documents</div>
-          <ul className="flex flex-wrap gap-2">
-            {Object.entries(files).map(([key, f]) =>
-              f?.url ? (
-                <li key={key}>
-                  <a
-                    href={f.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-2 border border-ink/15 rounded-sm text-sm text-ink hover:border-gold"
-                  >
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </a>
-                </li>
-              ) : null,
-            )}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
+// (Applications and Members management live in membersAdmin.tsx.)
