@@ -4,8 +4,11 @@ export function SiteFooter() {
       <div className="container-page py-16 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full border border-gold/50 text-gold font-serif text-lg">G</span>
-            <span className="font-serif text-lg tracking-wide">Global Travel Association</span>
+            <img
+              src="/logo.png"
+              alt="Global Travel Association"
+              className="h-16 w-auto object-contain"
+            />
           </div>
           <p className="mt-4 italic text-gold font-serif">Integrate — Innovate — Inspire</p>
           <p className="mt-4 max-w-md text-sm text-white/60 leading-relaxed">
