@@ -106,7 +106,7 @@ function Home() {
         <Hero />
         <About about={content.about} bearers={content.bearers} />
         <Activities events={events} />
-        <Membership />
+        <Membership payment={content.payment} />
         <Contact contact={content.contact} />
       </main>
       <SiteFooter />

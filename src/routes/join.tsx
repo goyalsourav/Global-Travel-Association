@@ -4,8 +4,10 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
 import { JoinWizard } from "@/components/join/JoinWizard";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
+import { getSiteContent } from "@/lib/api";
 
 export const Route = createFileRoute("/join")({
+  loader: async () => ({ content: await getSiteContent() }),
   head: () => ({
     meta: [
       { title: "Become a Member — Global Travel Association (GTA)" },
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/join")({
 });
 
 function JoinPage() {
+  const { content } = Route.useLoaderData();
   useSmoothScroll();
   useReveal();
 
@@ -57,7 +60,7 @@ function JoinPage() {
 
         <section className="relative bg-background py-14 md:py-20">
           <div className="container-page">
-            <JoinWizard />
+            <JoinWizard payment={content.payment} />
           </div>
         </section>
       </main>

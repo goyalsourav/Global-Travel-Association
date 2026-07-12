@@ -30,10 +30,21 @@ export type GtaEvent = {
   createdAt: string;
 };
 
+export type PaymentContent = {
+  qrImage: string;
+  upiId: string;
+  accountName: string;
+  accountNumber: string;
+  ifsc: string;
+  bankName: string;
+  branch: string;
+};
+
 export type SiteContent = {
   about: AboutContent;
   bearers: Bearer[];
   contact: ContactContent;
+  payment: PaymentContent;
 };
 
 export const defaultAbout: AboutContent = {
@@ -75,8 +86,19 @@ export const defaultContact: ContactContent = {
     "https://www.instagram.com/global_travel_aassociation?igsh=YTRveHdtNmJpN3Vp&utm_source=qr",
 };
 
+export const defaultPayment: PaymentContent = {
+  qrImage: "",
+  upiId: "",
+  accountName: "[Account Name]",
+  accountNumber: "[Account Number]",
+  ifsc: "[IFSC Code]",
+  bankName: "[Bank Name]",
+  branch: "[Branch]",
+};
+
 export const defaultSiteContent: SiteContent = {
   about: defaultAbout,
   bearers: defaultBearers,
   contact: defaultContact,
+  payment: defaultPayment,
 };

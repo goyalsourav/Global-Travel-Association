@@ -38,6 +38,9 @@ export function getDb() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
       `;
+      await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0`;
+      // Backfill any rows created before sort_order existed.
+      await sql`UPDATE events SET sort_order = id WHERE sort_order = 0`;
       await sql`
         CREATE TABLE IF NOT EXISTS membership_applications (
           id SERIAL PRIMARY KEY,

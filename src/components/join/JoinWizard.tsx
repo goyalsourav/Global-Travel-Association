@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, Pencil } from "lucide-react";
 import { submitApplication } from "@/lib/api";
 import type { UploadedFileMeta } from "@/lib/uploadFile";
+import { defaultPayment, type PaymentContent } from "@/data/siteContent";
+import { PaymentPanel } from "@/components/site/PaymentPanel";
 import { FileUploadField } from "./FileUploadField";
 import { useJoinDraft } from "./useJoinDraft";
 import {
@@ -27,7 +29,7 @@ function digitsOnly(v: string, max: number) {
   return v.replace(/\D/g, "").slice(0, max);
 }
 
-export function JoinWizard() {
+export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentContent }) {
   const { values, setValues, files, setFiles, step, setStep, hydrated, justSaved, clearDraft } =
     useJoinDraft();
   const [attempted, setAttempted] = useState<Set<number>>(new Set());
@@ -107,24 +109,24 @@ export function JoinWizard() {
             Thank you{values.name.trim() ? `, ${values.name.trim().split(" ")[0]}` : ""}.
           </h2>
           <p className="mt-4 text-charcoal leading-relaxed">
-            Your membership application has been recorded. Please complete your membership payment
-            via UPI or bank transfer — our team will confirm your membership within 24–48 hours of
-            receiving your application and payment.
+            Your membership application has been recorded. One last step — complete your membership
+            payment below. Our team will confirm your membership within 24–48 hours of receiving
+            your application and payment.
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="/#membership"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-ink text-white font-medium hover:bg-charcoal transition-colors rounded-sm"
-            >
-              View Payment Details
-            </a>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 px-8 py-4 border border-ink/20 text-ink font-medium rounded-sm hover:border-gold transition-colors"
-            >
-              Back to Home
-            </Link>
-          </div>
+        </div>
+
+        {/* Membership payment — the final step of the application */}
+        <div className="mt-8">
+          <PaymentPanel payment={payment} />
+        </div>
+
+        <div className="mt-8 flex flex-wrap gap-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-8 py-4 border border-ink/20 text-ink font-medium rounded-sm hover:border-gold transition-colors"
+          >
+            Back to Home
+          </Link>
         </div>
       </div>
     );

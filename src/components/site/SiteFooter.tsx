@@ -21,17 +21,17 @@ export function SiteFooter() {
           <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">Explore</div>
           <ul className="space-y-2 text-sm">
             <li>
-              <a href="#about" className="text-white/70 hover:text-gold">
+              <a href="/#about" className="text-white/70 hover:text-gold">
                 About
               </a>
             </li>
             <li>
-              <a href="#activities" className="text-white/70 hover:text-gold">
+              <a href="/#activities" className="text-white/70 hover:text-gold">
                 Activities
               </a>
             </li>
             <li>
-              <a href="#membership" className="text-white/70 hover:text-gold">
+              <a href="/#membership" className="text-white/70 hover:text-gold">
                 Membership
               </a>
             </li>
@@ -41,7 +41,7 @@ export function SiteFooter() {
               </a>
             </li>
             <li>
-              <a href="#contact" className="text-white/70 hover:text-gold">
+              <a href="/#contact" className="text-white/70 hover:text-gold">
                 Contact
               </a>
             </li>

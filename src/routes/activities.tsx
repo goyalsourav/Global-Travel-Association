@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
 import { ActivityGrid } from "@/components/site/ActivityGrid";
-import { activities, eventsToActivities } from "@/data/activities";
+import { eventsToActivities } from "@/data/activities";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
 import { getEvents } from "@/lib/api";
 
@@ -43,7 +43,7 @@ function ActivitiesPage() {
   useSmoothScroll();
   useReveal();
 
-  const all = [...eventsToActivities(events), ...activities];
+  const all = eventsToActivities(events);
   const visible = showAll ? all : all.slice(0, INITIAL_COUNT);
 
   return (

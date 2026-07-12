@@ -1,15 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { activities, eventsToActivities } from "@/data/activities";
+import { eventsToActivities } from "@/data/activities";
 import type { GtaEvent } from "@/data/siteContent";
 import { ActivityGrid } from "./ActivityGrid";
 
-// Homepage overview is capped so it stays compact even as more activities
-// are added — admin-created events come first, then the original set. The
-// full list lives on the /activities page.
+// Homepage grid is capped at 6 tiles: the first events (in the admin-defined
+// order) fill the layout, and everything beyond lives on /activities.
 const FEATURED_COUNT = 6;
 
 export function Activities({ events = [] }: { events?: GtaEvent[] }) {
-  const featured = [...eventsToActivities(events), ...activities].slice(0, FEATURED_COUNT);
+  const featured = eventsToActivities(events).slice(0, FEATURED_COUNT);
 
   return (
     <section id="activities" className="relative bg-ink text-white py-24 md:py-32">

@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, QrCode, Building2 } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
+import { defaultPayment, type PaymentContent } from "@/data/siteContent";
+import { PaymentPanel } from "./PaymentPanel";
 
 const checklist = [
   "Aadhar card & profile picture",
@@ -8,7 +10,7 @@ const checklist = [
   "Two references from existing GTA members",
 ];
 
-export function Membership() {
+export function Membership({ payment = defaultPayment }: { payment?: PaymentContent }) {
   return (
     <section id="membership" className="relative bg-background text-foreground py-24 md:py-32">
       <div className="container-page">
@@ -59,55 +61,10 @@ export function Membership() {
 
           {/* Payment panel */}
           <aside className="lg:col-span-5" data-reveal data-reveal-delay="150">
-            <div className="bg-ink text-white p-8 md:p-10 h-full">
-              <span className="eyebrow" style={{ color: "var(--gold)" }}>
-                <span className="gold-rule" />
-                Membership Payment
-              </span>
-              <h3 className="mt-3 font-serif text-2xl">Pay via UPI or bank transfer.</h3>
-              <p className="mt-2 text-sm text-white/70">
-                Complete your payment after submitting the form. Our team will confirm your
-                membership within 24–48 hours.
-              </p>
-
-              <div className="mt-8 grid gap-6">
-                <div className="flex items-start gap-4 p-5 bg-white/5 border border-white/10">
-                  <div className="grid h-24 w-24 shrink-0 place-items-center bg-white text-ink">
-                    <QrCode className="h-14 w-14" strokeWidth={1} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-[0.22em] text-gold">Scan to Pay</div>
-                    <div className="mt-1 font-serif text-lg">UPI QR Code</div>
-                    <p className="mt-1 text-xs text-white/60">[Upload actual UPI QR image here]</p>
-                  </div>
-                </div>
-
-                <div className="p-5 bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-2 text-gold text-xs uppercase tracking-[0.22em]">
-                    <Building2 className="h-4 w-4" /> Bank Transfer
-                  </div>
-                  <dl className="mt-4 space-y-2.5 text-sm">
-                    <BankRow label="Account Name" value="[Account Name]" />
-                    <BankRow label="Account Number" value="[Account Number]" />
-                    <BankRow label="IFSC Code" value="[IFSC Code]" />
-                    <BankRow label="Bank Name" value="[Bank Name]" />
-                    <BankRow label="Branch" value="[Branch]" />
-                  </dl>
-                </div>
-              </div>
-            </div>
+            <PaymentPanel payment={payment} />
           </aside>
         </div>
       </div>
     </section>
-  );
-}
-
-function BankRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between items-baseline gap-4 border-b border-white/10 pb-2 last:border-0">
-      <dt className="text-white/60 text-xs uppercase tracking-wider">{label}</dt>
-      <dd className="text-white font-mono text-sm text-right">{value}</dd>
-    </div>
   );
 }

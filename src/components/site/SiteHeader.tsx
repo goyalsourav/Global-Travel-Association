@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+// "/#section" (not "#section") so these work from subpages like /members too —
+// they navigate back to the homepage and scroll to the section.
 const links = [
-  { href: "#about", label: "About" },
-  { href: "#activities", label: "Activities" },
-  { href: "#membership", label: "Membership" },
-  { href: "#contact", label: "Contact" },
+  { href: "/#about", label: "About" },
+  { href: "/#activities", label: "Activities" },
+  { href: "/#membership", label: "Membership" },
+  { href: "/#contact", label: "Contact" },
 ];
 
 export function SiteHeader() {

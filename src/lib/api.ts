@@ -7,6 +7,7 @@ import type {
   Bearer,
   ContactContent,
   GtaEvent,
+  PaymentContent,
   SiteContent,
 } from "@/data/siteContent";
 import { defaultSiteContent } from "@/data/siteContent";
@@ -54,6 +55,7 @@ export const getSiteContent = createServerFn({ method: "GET" }).handler(
         about: (byKey.about as AboutContent) ?? defaultSiteContent.about,
         bearers: (byKey.bearers as Bearer[]) ?? defaultSiteContent.bearers,
         contact: (byKey.contact as ContactContent) ?? defaultSiteContent.contact,
+        payment: (byKey.payment as PaymentContent) ?? defaultSiteContent.payment,
       };
     } catch (err) {
       console.error("getSiteContent failed, using defaults:", err);
@@ -70,7 +72,7 @@ export const getEvents = createServerFn({ method: "GET" }).handler(
       await ready;
       const rows = (await sql`
         SELECT id, title, description, image_url, created_at
-        FROM events ORDER BY created_at DESC, id DESC
+        FROM events ORDER BY sort_order ASC, id ASC
       `) as EventRow[];
       return rows.map(rowToEvent);
     } catch (err) {
@@ -127,8 +129,12 @@ export const adminVerify = createServerFn({ method: "POST" })
 
 export const saveSiteContent = createServerFn({ method: "POST" })
   .validator(
-    (input: { password: string; key: "about" | "bearers" | "contact"; value: unknown }) => {
-      if (!["about", "bearers", "contact"].includes(input.key)) {
+    (input: {
+      password: string;
+      key: "about" | "bearers" | "contact" | "payment";
+      value: unknown;
+    }) => {
+      if (!["about", "bearers", "contact", "payment"].includes(input.key)) {
         throw new Error("Invalid content key");
       }
       return input;
@@ -158,12 +164,33 @@ export const createEvent = createServerFn({ method: "POST" })
     requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
+    // New events append at the end of the display order; admin can reorder.
     const rows = (await sql`
-      INSERT INTO events (title, description, image_url)
-      VALUES (${data.title.trim()}, ${data.description.trim()}, ${data.imageUrl})
+      INSERT INTO events (title, description, image_url, sort_order)
+      VALUES (${data.title.trim()}, ${data.description.trim()}, ${data.imageUrl},
+              (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM events))
       RETURNING id, title, description, image_url, created_at
     `) as EventRow[];
     return rowToEvent(rows[0]);
+  });
+
+export const reorderEvents = createServerFn({ method: "POST" })
+  .validator((input: { password: string; orderedIds: number[] }) => {
+    if (!Array.isArray(input.orderedIds) || input.orderedIds.some((id) => !Number.isInteger(id))) {
+      throw new Error("Invalid event order");
+    }
+    return input;
+  })
+  .handler(async ({ data }) => {
+    requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    await Promise.all(
+      data.orderedIds.map(
+        (id, index) => sql`UPDATE events SET sort_order = ${index + 1} WHERE id = ${id}`,
+      ),
+    );
+    return { ok: true };
   });
 
 export const updateEvent = createServerFn({ method: "POST" })

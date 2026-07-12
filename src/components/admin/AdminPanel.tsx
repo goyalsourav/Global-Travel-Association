@@ -11,12 +11,20 @@ import {
 } from "@/lib/api";
 import type { GtaEvent, SiteContent } from "@/data/siteContent";
 import type { Member } from "@/data/members";
-import { AboutEditor, BearersEditor, ContactEditor, EventsEditor } from "./editors";
+import { AboutEditor, BearersEditor, ContactEditor, EventsEditor, PaymentEditor } from "./editors";
 import { ApplicationsManager, MembersManager } from "./membersAdmin";
 
 const AUTH_KEY = "gta-admin-auth";
 
-const TABS = ["Applications", "Members", "Events", "About", "Office Bearers", "Contact"] as const;
+const TABS = [
+  "Applications",
+  "Members",
+  "Events",
+  "Payment",
+  "About",
+  "Office Bearers",
+  "Contact",
+] as const;
 type Tab = (typeof TABS)[number];
 
 export function AdminPanel() {
@@ -236,6 +244,13 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
             )}
             {tab === "Events" && (
               <EventsEditor password={password} events={events} setEvents={setEvents} />
+            )}
+            {tab === "Payment" && (
+              <PaymentEditor
+                password={password}
+                initial={content.payment}
+                onSaved={(payment) => setContent({ ...content, payment })}
+              />
             )}
             {tab === "Contact" && (
               <ContactEditor

@@ -1,8 +1,23 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, Plus, Trash2, Upload } from "lucide-react";
-import { createEvent, deleteEvent, saveSiteContent, updateEvent } from "@/lib/api";
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  GripVertical,
+  Loader2,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { createEvent, deleteEvent, reorderEvents, saveSiteContent, updateEvent } from "@/lib/api";
 import { formatBytes, MAX_FILE_BYTES, uploadFile } from "@/lib/uploadFile";
-import type { AboutContent, Bearer, ContactContent, GtaEvent } from "@/data/siteContent";
+import type {
+  AboutContent,
+  Bearer,
+  ContactContent,
+  GtaEvent,
+  PaymentContent,
+} from "@/data/siteContent";
 
 export const inputCls =
   "w-full bg-white border border-ink/15 focus:border-gold outline-none rounded-sm px-4 py-3 text-ink transition-colors placeholder:text-charcoal/40";
@@ -306,6 +321,34 @@ export function EventsEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+
+  // Optimistically apply a new order, persist it, and roll back on failure.
+  async function applyOrder(next: GtaEvent[]) {
+    const previous = events;
+    setEvents(next);
+    setSavingOrder(true);
+    setError(null);
+    try {
+      await reorderEvents({ data: { password, orderedIds: next.map((ev) => ev.id) } });
+    } catch (err) {
+      setEvents(previous);
+      setError(err instanceof Error ? err.message : "Failed to save the new order");
+    } finally {
+      setSavingOrder(false);
+    }
+  }
+
+  function moveEvent(from: number, to: number) {
+    if (savingOrder) return;
+    if (from === to || from < 0 || to < 0 || from >= events.length || to >= events.length) return;
+    const next = [...events];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    void applyOrder(next);
+  }
 
   function resetForm() {
     setEditingId(null);
@@ -330,7 +373,7 @@ export function EventsEditor({
     try {
       if (editingId === null) {
         const created = await createEvent({ data: { password, title, description, imageUrl } });
-        setEvents([created, ...events]);
+        setEvents([...events, created]);
       } else {
         await updateEvent({ data: { password, id: editingId, title, description, imageUrl } });
         setEvents(
@@ -368,7 +411,7 @@ export function EventsEditor({
       <form onSubmit={submit} className="bg-white border border-ink/10 rounded-sm p-6 space-y-5">
         <SectionHeading
           title={editingId === null ? "Create a GTA Event" : "Edit Event"}
-          note="New events appear first in the Activities & Events grids on the site."
+          note="New events join the end of the grid — drag the list below to change the order shown on the site."
         />
         <div>
           <label className={labelCls}>Title</label>
@@ -412,16 +455,62 @@ export function EventsEditor({
       </form>
 
       <div>
-        <h3 className="font-serif text-2xl text-ink mb-4">Published events ({events.length})</h3>
+        <div className="flex items-baseline justify-between gap-4 mb-1">
+          <h3 className="font-serif text-2xl text-ink">Published events ({events.length})</h3>
+          {savingOrder && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-charcoal/70">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving order…
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-charcoal mb-4">
+          This is the order shown on the site — drag a row (or use the arrows) to rearrange.
+        </p>
         {events.length === 0 && (
           <p className="text-sm text-charcoal">No events yet — create the first one above.</p>
         )}
         <ul className="space-y-3">
-          {events.map((ev) => (
+          {events.map((ev, i) => (
             <li
               key={ev.id}
-              className="flex items-center gap-4 bg-white border border-ink/10 rounded-sm p-4"
+              draggable={!savingOrder}
+              onDragStart={(e) => {
+                setDragIndex(i);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (overIndex !== i) setOverIndex(i);
+              }}
+              onDragLeave={() => {
+                if (overIndex === i) setOverIndex(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null) moveEvent(dragIndex, i);
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+              className={`flex items-center gap-3 bg-white border rounded-sm p-4 transition-colors ${
+                overIndex === i && dragIndex !== null && dragIndex !== i
+                  ? "border-gold bg-gold/5"
+                  : "border-ink/10"
+              } ${dragIndex === i ? "opacity-50" : ""}`}
             >
+              <span
+                className="hidden sm:grid h-11 w-8 place-items-center text-charcoal/40 cursor-grab active:cursor-grabbing shrink-0"
+                title="Drag to reorder"
+              >
+                <GripVertical className="h-5 w-5" />
+              </span>
+              <span className="w-6 shrink-0 text-center text-xs text-charcoal/50 font-mono">
+                {i + 1}
+              </span>
               <img
                 src={ev.imageUrl}
                 alt=""
@@ -438,6 +527,24 @@ export function EventsEditor({
                   })}
                 </div>
               </div>
+              <span className="flex flex-col shrink-0">
+                <button
+                  onClick={() => moveEvent(i, i - 1)}
+                  disabled={i === 0 || savingOrder}
+                  aria-label={`Move ${ev.title} up`}
+                  className="grid h-8 w-9 place-items-center text-charcoal/60 hover:text-gold disabled:opacity-25"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => moveEvent(i, i + 1)}
+                  disabled={i === events.length - 1 || savingOrder}
+                  aria-label={`Move ${ev.title} down`}
+                  className="grid h-8 w-9 place-items-center text-charcoal/60 hover:text-gold disabled:opacity-25"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </button>
+              </span>
               <button
                 onClick={() => {
                   setEditingId(ev.id);
@@ -518,6 +625,69 @@ export function ContactEditor({
           />
         </div>
       ))}
+      <SaveButton busy={saver.busy} saved={saver.saved} />
+      <ErrorNote error={saver.error} />
+    </form>
+  );
+}
+
+/* ---------- Payment ---------- */
+
+export function PaymentEditor({
+  password,
+  initial,
+  onSaved,
+}: {
+  password: string;
+  initial: PaymentContent;
+  onSaved: (v: PaymentContent) => void;
+}) {
+  const [payment, setPayment] = useState(initial);
+  const saver = useSaver(async (v: PaymentContent) => {
+    await saveSiteContent({ data: { password, key: "payment", value: v } });
+    onSaved(v);
+  });
+
+  const fields: { key: keyof PaymentContent; label: string; placeholder?: string }[] = [
+    { key: "upiId", label: "UPI ID", placeholder: "e.g. gta@upi" },
+    { key: "accountName", label: "Account Name" },
+    { key: "accountNumber", label: "Account Number" },
+    { key: "ifsc", label: "IFSC Code" },
+    { key: "bankName", label: "Bank Name" },
+    { key: "branch", label: "Branch" },
+  ];
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void saver.run(payment);
+      }}
+      className="space-y-6"
+    >
+      <SectionHeading
+        title="Membership Payment"
+        note="The UPI QR and bank details shown on the homepage and at the end of the membership application."
+      />
+      <ImagePicker
+        label="UPI QR Code image"
+        value={payment.qrImage}
+        onChange={(url) => setPayment({ ...payment, qrImage: url })}
+        aspect="aspect-square"
+      />
+      <div className="grid gap-5 sm:grid-cols-2">
+        {fields.map((f) => (
+          <div key={f.key}>
+            <label className={labelCls}>{f.label}</label>
+            <input
+              value={payment[f.key]}
+              placeholder={f.placeholder}
+              onChange={(e) => setPayment({ ...payment, [f.key]: e.target.value })}
+              className={inputCls}
+            />
+          </div>
+        ))}
+      </div>
       <SaveButton busy={saver.busy} saved={saver.saved} />
       <ErrorNote error={saver.error} />
     </form>
