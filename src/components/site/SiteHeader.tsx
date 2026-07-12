@@ -44,12 +44,12 @@ export function SiteHeader() {
               {l.label}
             </a>
           ))}
-          <a
-            href="#membership"
+          <Link
+            to="/join"
             className="text-sm font-medium px-5 py-2.5 bg-gold text-ink hover:bg-gold-soft transition-colors rounded-sm"
           >
             Become a Member
-          </a>
+          </Link>
         </nav>
 
         <button
@@ -59,9 +59,13 @@ export function SiteHeader() {
           aria-expanded={open}
         >
           <div className="w-6 flex flex-col gap-1.5">
-            <span className={`h-0.5 bg-current transition-transform ${open ? "translate-y-2 rotate-45" : ""}`} />
+            <span
+              className={`h-0.5 bg-current transition-transform ${open ? "translate-y-2 rotate-45" : ""}`}
+            />
             <span className={`h-0.5 bg-current transition-opacity ${open ? "opacity-0" : ""}`} />
-            <span className={`h-0.5 bg-current transition-transform ${open ? "-translate-y-2 -rotate-45" : ""}`} />
+            <span
+              className={`h-0.5 bg-current transition-transform ${open ? "-translate-y-2 -rotate-45" : ""}`}
+            />
           </div>
         </button>
       </div>
@@ -79,13 +83,13 @@ export function SiteHeader() {
                 {l.label}
               </a>
             ))}
-            <a
-              href="#membership"
+            <Link
+              to="/join"
               onClick={() => setOpen(false)}
               className="mt-4 text-center py-3 bg-gold text-ink font-medium"
             >
               Become a Member
-            </a>
+            </Link>
           </nav>
         </div>
       )}

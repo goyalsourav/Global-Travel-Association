@@ -8,6 +8,7 @@ import { Contact } from "@/components/site/Contact";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
+import { getEvents, getSiteContent } from "@/lib/api";
 
 const orgJsonLd = {
   "@context": "https://schema.org",
@@ -60,6 +61,10 @@ const faqJsonLd = {
 };
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const [content, events] = await Promise.all([getSiteContent(), getEvents()]);
+    return { content, events };
+  },
   head: () => ({
     meta: [
       { title: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies" },
@@ -68,7 +73,10 @@ export const Route = createFileRoute("/")({
         content:
           "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2026 in Raipur, uniting travel professionals PAN India through collaboration, events and ethical practice.",
       },
-      { property: "og:title", content: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies" },
+      {
+        property: "og:title",
+        content: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies",
+      },
       {
         property: "og:description",
         content:
@@ -88,6 +96,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const { content, events } = Route.useLoaderData();
   useSmoothScroll();
   useReveal();
   return (
@@ -95,10 +104,10 @@ function Home() {
       <SiteHeader />
       <main>
         <Hero />
-        <About />
-        <Activities />
+        <About about={content.about} bearers={content.bearers} />
+        <Activities events={events} />
         <Membership />
-        <Contact />
+        <Contact contact={content.contact} />
       </main>
       <SiteFooter />
       <FloatingActions />

@@ -1,25 +1,30 @@
 import { Link } from "@tanstack/react-router";
-import { activities } from "@/data/activities";
+import { activities, eventsToActivities } from "@/data/activities";
+import type { GtaEvent } from "@/data/siteContent";
 import { ActivityGrid } from "./ActivityGrid";
 
 // Homepage overview is capped so it stays compact even as more activities
-// are added to the data source — the full list lives on the /activities page.
+// are added — admin-created events come first, then the original set. The
+// full list lives on the /activities page.
 const FEATURED_COUNT = 6;
 
-export function Activities() {
-  const featured = activities.slice(0, FEATURED_COUNT);
+export function Activities({ events = [] }: { events?: GtaEvent[] }) {
+  const featured = [...eventsToActivities(events), ...activities].slice(0, FEATURED_COUNT);
 
   return (
     <section id="activities" className="relative bg-ink text-white py-24 md:py-32">
       <div className="container-page">
         <div className="max-w-3xl" data-reveal>
-          <span className="eyebrow"><span className="gold-rule" />Activities & Events</span>
+          <span className="eyebrow">
+            <span className="gold-rule" />
+            Activities & Events
+          </span>
           <h2 className="mt-4 font-serif text-4xl md:text-5xl leading-tight">
             The <span className="italic text-gold">work</span> we do together.
           </h2>
           <p className="mt-5 text-white/70 leading-relaxed">
-            FAM trips, educational sessions, sport, service — the activities that make
-            GTA a living association, not a directory.
+            FAM trips, educational sessions, sport, service — the activities that make GTA a living
+            association, not a directory.
           </p>
         </div>
 

@@ -1,9 +1,22 @@
+import type { GtaEvent } from "@/data/siteContent";
+
 export type Activity = {
   src: string;
   alt: string;
   title: string;
   caption: string;
 };
+
+// Admin-created events (from the database) rendered through the same grid as
+// the original hardcoded activities.
+export function eventsToActivities(events: GtaEvent[]): Activity[] {
+  return events.map((e) => ({
+    src: e.imageUrl,
+    alt: e.title,
+    title: e.title,
+    caption: e.description,
+  }));
+}
 
 // Add new activities/events to the end of this list — the full list appears
 // on the /activities page. The homepage overview only shows a fixed featured

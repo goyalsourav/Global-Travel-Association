@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 
 export function Hero() {
@@ -40,18 +41,22 @@ export function Hero() {
             <span className="h-px w-8 bg-gold" />
           </div>
           <p className="max-w-2xl text-white/70 text-base md:text-lg leading-relaxed">
-            India's growing network of trusted travel agencies — connecting,
-            empowering, and elevating the travel industry together.
+            India's growing network of trusted travel agencies — connecting, empowering, and
+            elevating the travel industry together.
           </p>
         </div>
 
-        <div className="mt-10 flex flex-wrap justify-center gap-4" data-reveal data-reveal-delay="360">
-          <a
-            href="#membership"
+        <div
+          className="mt-10 flex flex-wrap justify-center gap-4"
+          data-reveal
+          data-reveal-delay="360"
+        >
+          <Link
+            to="/join"
             className="inline-flex items-center gap-2 px-8 py-4 bg-gold text-ink font-medium rounded-sm hover:bg-gold-soft transition-colors"
           >
             Become a Member
-          </a>
+          </Link>
           <a
             href="#about"
             className="inline-flex items-center gap-2 px-8 py-4 border border-white/30 text-white font-medium rounded-sm hover:bg-white/10 transition-colors"

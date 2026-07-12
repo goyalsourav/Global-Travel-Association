@@ -10,7 +10,7 @@ export function ActivityGrid({ items }: { items: Activity[] }) {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {items.map((item, i) => (
           <button
-            key={item.title}
+            key={`${item.title}-${i}`}
             onClick={() => setActive(item)}
             className={`group relative overflow-hidden text-left ${i % 5 === 0 ? "sm:col-span-2 lg:col-span-2 aspect-[16/10]" : "aspect-[4/5]"}`}
             data-reveal
@@ -44,10 +44,7 @@ export function ActivityGrid({ items }: { items: Activity[] }) {
           >
             <X className="h-6 w-6" />
           </button>
-          <figure
-            className="max-w-5xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <figure className="max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
             <img src={active.src} alt={active.alt} className="w-full max-h-[75vh] object-contain" />
             <figcaption className="mt-4 text-center">
               <div className="font-serif text-2xl text-white">{active.title}</div>

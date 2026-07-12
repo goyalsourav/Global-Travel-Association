@@ -1,8 +1,4 @@
-const leaders = [
-  { name: "Manish Jain", role: "President" },
-  { name: "Shubham Agrawal", role: "General Secretary" },
-  { name: "Rahul Waswani", role: "Treasurer" },
-];
+import { defaultAbout, defaultBearers, type AboutContent, type Bearer } from "@/data/siteContent";
 
 const founders = [
   "Shubham Agrawal",
@@ -15,13 +11,35 @@ const founders = [
 ];
 
 const roadmap = [
-  { year: "2026", title: "Founded in Raipur", detail: "Established as a professional association for travel agencies in Chhattisgarh." },
-  { year: "Next", title: "Chhattisgarh Chapter", detail: "Onboarding agencies across the state and formalising regional chapters." },
-  { year: "Soon", title: "PAN India Network", detail: "Expanding into a nationwide alliance of trusted travel professionals." },
-  { year: "Beyond", title: "Global Partnerships", detail: "Building alliances with international travel organisations and tourism boards." },
+  {
+    year: "2026",
+    title: "Founded in Raipur",
+    detail: "Established as a professional association for travel agencies in Chhattisgarh.",
+  },
+  {
+    year: "Next",
+    title: "Chhattisgarh Chapter",
+    detail: "Onboarding agencies across the state and formalising regional chapters.",
+  },
+  {
+    year: "Soon",
+    title: "PAN India Network",
+    detail: "Expanding into a nationwide alliance of trusted travel professionals.",
+  },
+  {
+    year: "Beyond",
+    title: "Global Partnerships",
+    detail: "Building alliances with international travel organisations and tourism boards.",
+  },
 ];
 
-export function About() {
+export function About({
+  about = defaultAbout,
+  bearers = defaultBearers,
+}: {
+  about?: AboutContent;
+  bearers?: Bearer[];
+}) {
   return (
     <section id="about" className="relative bg-background text-foreground py-24 md:py-32">
       <div className="container-page">
@@ -45,37 +63,24 @@ export function About() {
 
           <div className="lg:col-span-7 space-y-10">
             <div data-reveal>
-              <span className="eyebrow"><span className="gold-rule" />About the Association</span>
+              <span className="eyebrow">
+                <span className="gold-rule" />
+                About the Association
+              </span>
               <h2 className="mt-4 font-serif text-4xl md:text-5xl leading-tight text-ink">
                 A trusted alliance for India's travel industry.
               </h2>
-              <p className="mt-6 text-lg text-charcoal leading-relaxed">
-                Global Travel Association (GTA) is an India-based association established
-                in 2026 with a global vision to unite, empower, and elevate travel
-                agencies through collaboration, knowledge sharing, and ethical business
-                practices.
-              </p>
+              <p className="mt-6 text-lg text-charcoal leading-relaxed">{about.intro}</p>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-8" data-reveal data-reveal-delay="120">
               <article className="border-t border-ink/10 pt-6">
                 <h3 className="font-serif text-2xl text-ink">Our Vision</h3>
-                <p className="mt-3 text-charcoal leading-relaxed">
-                  To become India's most trusted and respected association of travel
-                  agencies, building a strong national network with meaningful global
-                  partnerships that inspire growth, innovation, and excellence across
-                  the travel industry.
-                </p>
+                <p className="mt-3 text-charcoal leading-relaxed">{about.vision}</p>
               </article>
               <article className="border-t border-gold pt-6">
                 <h3 className="font-serif text-2xl text-ink">Our Mission</h3>
-                <p className="mt-3 text-charcoal leading-relaxed">
-                  To connect travel agencies through a professional and ethical platform
-                  that encourages collaboration, continuous learning, and sustainable
-                  business growth — creating networking opportunities, industry events
-                  and FAM trips, promoting responsible tourism, and representing
-                  India's travel agency community nationally and internationally.
-                </p>
+                <p className="mt-3 text-charcoal leading-relaxed">{about.mission}</p>
               </article>
             </div>
           </div>
@@ -85,21 +90,24 @@ export function About() {
         <div className="mt-28">
           <div className="flex items-end justify-between flex-wrap gap-4" data-reveal>
             <div>
-              <span className="eyebrow"><span className="gold-rule" />Leadership</span>
+              <span className="eyebrow">
+                <span className="gold-rule" />
+                Leadership
+              </span>
               <h3 className="mt-3 font-serif text-3xl md:text-4xl text-ink">Our Office Bearers</h3>
             </div>
           </div>
           <div className="mt-10 grid md:grid-cols-3 gap-6">
-            {leaders.map((l, i) => (
+            {bearers.map((l, i) => (
               <div
-                key={l.name}
+                key={`${l.role}-${i}`}
                 className="group relative bg-ink text-white overflow-hidden"
                 data-reveal
                 data-reveal-delay={i * 100}
               >
                 <div className="aspect-[4/5] overflow-hidden">
                   <img
-                    src={`https://images.unsplash.com/photo-${["1560250097-0b93528c311a", "1573496359142-b8d87734a5a2", "1519085360753-af0119f7cbe7"][i]}?auto=format&fit=crop&w=900&q=80`}
+                    src={l.image}
                     alt={`${l.name}, ${l.role} of Global Travel Association`}
                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
                     loading="lazy"
@@ -116,11 +124,19 @@ export function About() {
 
         {/* Founders */}
         <div className="mt-24 bg-secondary p-8 md:p-12" data-reveal>
-          <span className="eyebrow"><span className="gold-rule" />Founding Members</span>
-          <h3 className="mt-3 font-serif text-2xl md:text-3xl text-ink">The seven who started it.</h3>
+          <span className="eyebrow">
+            <span className="gold-rule" />
+            Founding Members
+          </span>
+          <h3 className="mt-3 font-serif text-2xl md:text-3xl text-ink">
+            The seven who started it.
+          </h3>
           <div className="mt-6 flex flex-wrap gap-3">
             {founders.map((f) => (
-              <span key={f} className="px-4 py-2 bg-white text-ink text-sm border border-ink/10 rounded-full">
+              <span
+                key={f}
+                className="px-4 py-2 bg-white text-ink text-sm border border-ink/10 rounded-full"
+              >
                 {f}
               </span>
             ))}
@@ -130,7 +146,10 @@ export function About() {
         {/* Roadmap */}
         <div className="mt-24">
           <div data-reveal>
-            <span className="eyebrow"><span className="gold-rule" />Roadmap</span>
+            <span className="eyebrow">
+              <span className="gold-rule" />
+              Roadmap
+            </span>
             <h3 className="mt-3 font-serif text-3xl md:text-4xl text-ink">
               From Raipur to the world.
             </h3>
