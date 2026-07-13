@@ -51,7 +51,7 @@ export function Membership({ payment = defaultPayment }: { payment?: PaymentCont
               <div className="pt-8 mt-auto">
                 <Link
                   to="/join"
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-ink text-white font-medium hover:bg-charcoal transition-colors rounded-sm"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gold text-ink font-medium hover:bg-gold-soft transition-colors rounded-full"
                 >
                   Start Your Application <ArrowRight className="h-4 w-4" />
                 </Link>

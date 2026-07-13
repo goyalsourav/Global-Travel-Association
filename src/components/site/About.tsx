@@ -146,7 +146,7 @@ export function About({
           <div className="mt-8">
             <Link
               to="/members"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-ink text-white font-medium rounded-sm hover:bg-charcoal transition-colors"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gold text-ink font-medium rounded-full hover:bg-gold-soft transition-colors"
             >
               Meet All Our Members <ArrowRight className="h-4 w-4" />
             </Link>
