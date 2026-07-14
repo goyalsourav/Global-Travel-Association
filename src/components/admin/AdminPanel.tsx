@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Loader2, Lock, LogOut } from "lucide-react";
 import {
   adminGetMembers,
+  adminGetPayments,
   adminVerify,
   getApplications,
   getEvents,
@@ -10,9 +11,10 @@ import {
   type ApplicationRecord,
 } from "@/lib/api";
 import type { GtaEvent, SiteContent } from "@/data/siteContent";
-import type { Member } from "@/data/members";
+import type { Member, MemberPayment } from "@/data/members";
 import { AboutEditor, BearersEditor, ContactEditor, EventsEditor, PaymentEditor } from "./editors";
 import { ApplicationsManager, MembersManager } from "./membersAdmin";
+import { SettingsManager } from "./settingsAdmin";
 
 const AUTH_KEY = "gta-admin-auth";
 
@@ -24,6 +26,7 @@ const TABS = [
   "About",
   "Office Bearers",
   "Contact",
+  "Settings",
 ] as const;
 type Tab = (typeof TABS)[number];
 
@@ -65,6 +68,10 @@ export function AdminPanel() {
   return (
     <Dashboard
       password={password}
+      onPasswordChanged={(pw) => {
+        window.sessionStorage.setItem(AUTH_KEY, pw);
+        setPassword(pw);
+      }}
       onLogout={() => {
         window.sessionStorage.removeItem(AUTH_KEY);
         setPassword(null);
@@ -130,11 +137,20 @@ function PasswordGate({ onSuccess }: { onSuccess: (pw: string) => void }) {
   );
 }
 
-function Dashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
+function Dashboard({
+  password,
+  onPasswordChanged,
+  onLogout,
+}: {
+  password: string;
+  onPasswordChanged: (pw: string) => void;
+  onLogout: () => void;
+}) {
   const [tab, setTab] = useState<Tab>("Applications");
   const [content, setContent] = useState<SiteContent | null>(null);
   const [events, setEvents] = useState<GtaEvent[] | null>(null);
   const [members, setMembers] = useState<Member[] | null>(null);
+  const [payments, setPayments] = useState<MemberPayment[] | null>(null);
   const [applications, setApplications] = useState<ApplicationRecord[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -144,12 +160,14 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
       getEvents(),
       adminGetMembers({ data: { password } }),
       getApplications({ data: { password } }),
+      adminGetPayments({ data: { password } }),
     ])
-      .then(([c, e, m, a]) => {
+      .then(([c, e, m, a, p]) => {
         setContent(c);
         setEvents(e);
         setMembers(m);
         setApplications(a);
+        setPayments(p);
       })
       .catch((err) =>
         setLoadError(err instanceof Error ? err.message : "Failed to load site content"),
@@ -205,7 +223,7 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
             {loadError} — check that DATABASE_URL is configured.
           </p>
         )}
-        {!content || !events || !members || !applications ? (
+        {!content || !events || !members || !applications || !payments ? (
           <div className="flex items-center gap-2 text-charcoal py-16 justify-center">
             <Loader2 className="h-5 w-5 animate-spin" /> Loading content…
           </div>
@@ -226,6 +244,8 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
                 members={members}
                 setMembers={setMembers}
                 applications={applications}
+                payments={payments}
+                setPayments={setPayments}
               />
             )}
             {tab === "About" && (
@@ -258,6 +278,9 @@ function Dashboard({ password, onLogout }: { password: string; onLogout: () => v
                 initial={content.contact}
                 onSaved={(contact) => setContent({ ...content, contact })}
               />
+            )}
+            {tab === "Settings" && (
+              <SettingsManager password={password} onPasswordChanged={onPasswordChanged} />
             )}
           </>
         )}

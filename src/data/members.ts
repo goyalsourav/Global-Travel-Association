@@ -24,6 +24,16 @@ export type PublicMember = {
   firmName: string;
 };
 
+// One entry in a member's payment ledger (admin only).
+export type MemberPayment = {
+  id: number;
+  memberId: number;
+  amount: number;
+  paidOn: string; // yyyy-mm-dd
+  note: string;
+  createdAt: string;
+};
+
 export type ApplicationStatus =
   "submitted" | "reviewed" | "payment_requested" | "payment_successful" | "complete";
 

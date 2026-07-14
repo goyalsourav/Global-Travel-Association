@@ -5,14 +5,17 @@ import {
   ChevronUp,
   Loader2,
   Plus,
+  Receipt,
   Search,
   Trash2,
   UserPlus,
 } from "lucide-react";
 import {
   addMember,
+  addMemberPayment,
   approveApplication,
   deleteMember,
+  deleteMemberPayment,
   updateApplicationStatus,
   updateMember,
   type ApplicationData,
@@ -24,6 +27,7 @@ import {
   applicationStatusLabel,
   type ApplicationStatus,
   type Member,
+  type MemberPayment,
 } from "@/data/members";
 import { ErrorNote, inputCls, labelCls, SectionHeading } from "./editors";
 
@@ -44,6 +48,12 @@ function fmtDate(iso: string) {
     year: "numeric",
   });
 }
+
+const inr = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 2,
+});
 
 /* ================= Applications ================= */
 
@@ -221,17 +231,22 @@ export function MembersManager({
   members,
   setMembers,
   applications,
+  payments,
+  setPayments,
 }: {
   password: string;
   members: Member[];
   setMembers: (m: Member[]) => void;
   applications: ApplicationRecord[];
+  payments: MemberPayment[];
+  setPayments: (p: MemberPayment[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending">("all");
   const [showAdd, setShowAdd] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [ledgerId, setLedgerId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -359,6 +374,7 @@ export function MembersManager({
         {visible.map((m) => {
           const busy = busyId === m.id;
           const linkedApps = appsFor(m);
+          const memberPayments = payments.filter((p) => p.memberId === m.id);
           return (
             <li key={m.id} className="bg-white border border-ink/10 rounded-sm">
               <div className="flex flex-wrap items-center gap-3 p-4">
@@ -414,6 +430,15 @@ export function MembersManager({
                   <span className="text-xs text-charcoal/60">paid {fmtDate(m.paidAt)}</span>
                 )}
 
+                {/* Payment ledger toggle */}
+                <button
+                  onClick={() => setLedgerId(ledgerId === m.id ? null : m.id)}
+                  className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-ink underline underline-offset-4 hover:text-gold min-h-11 px-2"
+                >
+                  <Receipt className="h-3.5 w-3.5" />
+                  Ledger{memberPayments.length > 0 ? ` (${memberPayments.length})` : ""}
+                </button>
+
                 {linkedApps.length > 0 && (
                   <button
                     onClick={() => setOpenId(openId === m.id ? null : m.id)}
@@ -442,6 +467,19 @@ export function MembersManager({
                 </button>
               </div>
 
+              {ledgerId === m.id && (
+                <PaymentLedger
+                  password={password}
+                  member={m}
+                  payments={memberPayments}
+                  onAdded={(payment, updatedMember) => {
+                    setPayments([payment, ...payments]);
+                    setMembers(members.map((x) => (x.id === updatedMember.id ? updatedMember : x)));
+                  }}
+                  onDeleted={(id) => setPayments(payments.filter((p) => p.id !== id))}
+                />
+              )}
+
               {openId === m.id && (
                 <div className="border-t border-ink/10">
                   {linkedApps.map((a) => (
@@ -465,6 +503,158 @@ export function MembersManager({
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+/* ================= Payment ledger ================= */
+
+function PaymentLedger({
+  password,
+  member,
+  payments,
+  onAdded,
+  onDeleted,
+}: {
+  password: string;
+  member: Member;
+  payments: MemberPayment[]; // already filtered to this member
+  onAdded: (payment: MemberPayment, member: Member) => void;
+  onDeleted: (id: number) => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [paidOn, setPaidOn] = useState(() => new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const total = payments.reduce((sum, p) => sum + p.amount, 0);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      setError("Enter a payment amount greater than zero.");
+      return;
+    }
+    if (!paidOn) {
+      setError("Pick the payment date.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await addMemberPayment({
+        data: { password, memberId: member.id, amount: value, paidOn, note },
+      });
+      onAdded(res.payment, res.member);
+      setAmount("");
+      setNote("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to record payment");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(p: MemberPayment) {
+    if (
+      !window.confirm(
+        `Delete the ${inr.format(p.amount)} payment of ${fmtDate(p.paidOn)} from ${member.name}'s ledger?`,
+      )
+    ) {
+      return;
+    }
+    setDeletingId(p.id);
+    setError(null);
+    try {
+      await deleteMemberPayment({ data: { password, id: p.id } });
+      onDeleted(p.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete payment");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <div className="border-t border-gold/30 bg-gold/5 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <span className="text-xs uppercase tracking-[0.22em] text-gold">Payment Ledger</span>
+        <span className="text-sm text-ink font-medium">Total received: {inr.format(total)}</span>
+      </div>
+
+      {payments.length === 0 ? (
+        <p className="text-sm text-charcoal mb-4">No payments recorded yet.</p>
+      ) : (
+        <ul className="mb-4 divide-y divide-ink/5 bg-white border border-ink/10 rounded-sm">
+          {payments.map((p) => (
+            <li key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+              <span className="font-medium text-ink w-28">{inr.format(p.amount)}</span>
+              <span className="text-sm text-charcoal w-28">{fmtDate(p.paidOn)}</span>
+              <span className="flex-1 min-w-32 text-sm text-charcoal/80 break-words">
+                {p.note || "—"}
+              </span>
+              <button
+                onClick={() => void remove(p)}
+                disabled={deletingId === p.id}
+                aria-label={`Delete payment of ${inr.format(p.amount)}`}
+                className="grid h-9 w-9 place-items-center text-charcoal/60 hover:text-destructive disabled:opacity-50"
+              >
+                {deletingId === p.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={add} className="flex flex-wrap items-end gap-3">
+        <div className="w-36">
+          <label className={labelCls}>Amount (₹)</label>
+          <input
+            type="number"
+            min="1"
+            step="0.01"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            className={inputCls}
+          />
+        </div>
+        <div className="w-44">
+          <label className={labelCls}>Date</label>
+          <input
+            type="date"
+            value={paidOn}
+            onChange={(e) => setPaidOn(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+        <div className="flex-1 min-w-44">
+          <label className={labelCls}>Note (optional)</label>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. annual membership fee"
+            className={inputCls}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={busy || !amount}
+          className="inline-flex items-center gap-2 min-h-12 px-5 bg-ink text-white text-sm font-medium rounded-sm hover:bg-charcoal transition-colors disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          Add Payment
+        </button>
+      </form>
+      <ErrorNote error={error} />
     </div>
   );
 }

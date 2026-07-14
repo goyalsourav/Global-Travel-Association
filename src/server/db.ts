@@ -1,5 +1,6 @@
 // Server-only Neon Postgres access. Every query goes over Neon's HTTP driver,
 // so this works in any serverless/edge runtime without connection pooling.
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 
 export function isDbConfigured(): boolean {
@@ -68,6 +69,23 @@ export function getDb() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS member_payments (
+          id SERIAL PRIMARY KEY,
+          member_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+          amount NUMERIC(12, 2) NOT NULL,
+          paid_on DATE NOT NULL,
+          note TEXT NOT NULL DEFAULT '',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS admin_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -76,12 +94,53 @@ export function getDb() {
   return { sql, ready: schemaReady };
 }
 
-export function requireAdmin(password: unknown): void {
+// The admin password lives in admin_settings once it has been changed from the
+// panel; until then the ADMIN_PASSWORD env var applies. Stored as salt:scrypt.
+const ADMIN_PASSWORD_KEY = "admin_password";
+
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  return `${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
+}
+
+function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const expected = Buffer.from(hash, "hex");
+  const candidate = scryptSync(password, salt, 64);
+  return expected.length === candidate.length && timingSafeEqual(candidate, expected);
+}
+
+export async function requireAdmin(password: unknown): Promise<void> {
+  if (typeof password !== "string" || !password) {
+    throw new Error("Incorrect password");
+  }
+  if (isDbConfigured()) {
+    const { sql, ready } = getDb();
+    await ready;
+    const rows = (await sql`
+      SELECT value FROM admin_settings WHERE key = ${ADMIN_PASSWORD_KEY}
+    `) as { value: string }[];
+    if (rows[0]) {
+      if (!verifyPassword(password, rows[0].value)) throw new Error("Incorrect password");
+      return;
+    }
+  }
   const expected = process.env.ADMIN_PASSWORD;
   if (!expected) {
     throw new Error("ADMIN_PASSWORD is not set on the server — add it to .env");
   }
-  if (typeof password !== "string" || password !== expected) {
+  if (password !== expected) {
     throw new Error("Incorrect password");
   }
+}
+
+export async function setAdminPassword(newPassword: string): Promise<void> {
+  const { sql, ready } = getDb();
+  await ready;
+  await sql`
+    INSERT INTO admin_settings (key, value, updated_at)
+    VALUES (${ADMIN_PASSWORD_KEY}, ${hashPassword(newPassword)}, now())
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+  `;
 }

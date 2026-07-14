@@ -1,7 +1,7 @@
 // Server functions (TanStack Start RPC). Public reads degrade gracefully when
 // the database isn't configured yet so the site still renders with defaults.
 import { createServerFn } from "@tanstack/react-start";
-import { getDb, isDbConfigured, requireAdmin } from "@/server/db";
+import { getDb, isDbConfigured, requireAdmin, setAdminPassword } from "@/server/db";
 import type {
   AboutContent,
   Bearer,
@@ -14,6 +14,7 @@ import { defaultSiteContent } from "@/data/siteContent";
 import type {
   ApplicationStatus,
   Member,
+  MemberPayment,
   MemberStatus,
   PaymentStatus,
   PublicMember,
@@ -131,7 +132,20 @@ export const submitApplication = createServerFn({ method: "POST" })
 export const adminVerify = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
+    return { ok: true };
+  });
+
+export const changeAdminPassword = createServerFn({ method: "POST" })
+  .validator((input: { password: string; newPassword: string }) => {
+    if (typeof input.newPassword !== "string" || input.newPassword.trim().length < 8) {
+      throw new Error("The new password must be at least 8 characters");
+    }
+    return input;
+  })
+  .handler(async ({ data }) => {
+    await requireAdmin(data.password);
+    await setAdminPassword(data.newPassword.trim());
     return { ok: true };
   });
 
@@ -149,7 +163,7 @@ export const saveSiteContent = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     await sql`
@@ -169,7 +183,7 @@ export const createEvent = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     // New events append at the end of the display order; admin can reorder.
@@ -190,7 +204,7 @@ export const reorderEvents = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     await Promise.all(
@@ -215,7 +229,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     await sql`
@@ -230,7 +244,7 @@ export const updateEvent = createServerFn({ method: "POST" })
 export const deleteEvent = createServerFn({ method: "POST" })
   .validator((input: { password: string; id: number }) => input)
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     await sql`DELETE FROM events WHERE id = ${data.id}`;
@@ -240,7 +254,7 @@ export const deleteEvent = createServerFn({ method: "POST" })
 export const getApplications = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
   .handler(async ({ data }): Promise<ApplicationRecord[]> => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     const rows = (await sql`
@@ -272,7 +286,7 @@ export const updateApplicationStatus = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     await sql`UPDATE membership_applications SET status = ${data.status} WHERE id = ${data.id}`;
@@ -331,7 +345,7 @@ export const getPublicMembers = createServerFn({ method: "GET" }).handler(
 export const adminGetMembers = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
   .handler(async ({ data }): Promise<Member[]> => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     const rows = (await sql`
@@ -356,7 +370,7 @@ export const addMember = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }): Promise<Member> => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     const rows = (await sql`
@@ -387,7 +401,7 @@ export const updateMember = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data }): Promise<Member> => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     if (data.status) {
@@ -413,10 +427,97 @@ export const updateMember = createServerFn({ method: "POST" })
 export const deleteMember = createServerFn({ method: "POST" })
   .validator((input: { password: string; id: number }) => input)
   .handler(async ({ data }) => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     await sql`DELETE FROM members WHERE id = ${data.id}`;
+    return { ok: true };
+  });
+
+// ---------- Member payment ledger ----------
+
+type PaymentRow = {
+  id: number;
+  member_id: number;
+  amount: string | number;
+  paid_on: string | Date;
+  note: string;
+  created_at: string;
+};
+
+function rowToPayment(r: PaymentRow): MemberPayment {
+  const paidOn =
+    r.paid_on instanceof Date
+      ? r.paid_on.toISOString().slice(0, 10)
+      : String(r.paid_on).slice(0, 10);
+  return {
+    id: r.id,
+    memberId: r.member_id,
+    amount: Number(r.amount),
+    paidOn,
+    note: r.note,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+export const adminGetPayments = createServerFn({ method: "POST" })
+  .validator((input: { password: string }) => input)
+  .handler(async ({ data }): Promise<MemberPayment[]> => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    const rows = (await sql`
+      SELECT id, member_id, amount, paid_on, note, created_at
+      FROM member_payments ORDER BY paid_on DESC, id DESC
+    `) as PaymentRow[];
+    return rows.map(rowToPayment);
+  });
+
+// Recording a payment also marks the member as paid (paid_at = payment date).
+export const addMemberPayment = createServerFn({ method: "POST" })
+  .validator(
+    (input: {
+      password: string;
+      memberId: number;
+      amount: number;
+      paidOn: string;
+      note?: string;
+    }) => {
+      if (!Number.isFinite(input.amount) || input.amount <= 0) {
+        throw new Error("Enter a payment amount greater than zero");
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.paidOn)) {
+        throw new Error("Enter a valid payment date");
+      }
+      return input;
+    },
+  )
+  .handler(async ({ data }): Promise<{ payment: MemberPayment; member: Member }> => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    const rows = (await sql`
+      INSERT INTO member_payments (member_id, amount, paid_on, note)
+      VALUES (${data.memberId}, ${data.amount}, ${data.paidOn}, ${data.note?.trim() ?? ""})
+      RETURNING id, member_id, amount, paid_on, note, created_at
+    `) as PaymentRow[];
+    const memberRows = (await sql`
+      UPDATE members SET payment_status = 'paid', paid_at = ${data.paidOn}
+      WHERE id = ${data.memberId}
+      RETURNING id, name, firm_name, contact, email, status, payment_status, paid_at,
+                application_id, created_at
+    `) as MemberRow[];
+    if (!memberRows[0]) throw new Error("Member not found");
+    return { payment: rowToPayment(rows[0]), member: rowToMember(memberRows[0]) };
+  });
+
+export const deleteMemberPayment = createServerFn({ method: "POST" })
+  .validator((input: { password: string; id: number }) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    await sql`DELETE FROM member_payments WHERE id = ${data.id}`;
     return { ok: true };
   });
 
@@ -425,7 +526,7 @@ export const deleteMember = createServerFn({ method: "POST" })
 export const approveApplication = createServerFn({ method: "POST" })
   .validator((input: { password: string; applicationId: number }) => input)
   .handler(async ({ data }): Promise<Member> => {
-    requireAdmin(data.password);
+    await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
     const apps = (await sql`
