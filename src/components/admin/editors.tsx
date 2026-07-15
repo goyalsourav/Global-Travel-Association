@@ -8,8 +8,16 @@ import {
   Plus,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
-import { createEvent, deleteEvent, reorderEvents, saveSiteContent, updateEvent } from "@/lib/api";
+import {
+  createEvent,
+  deleteEvent,
+  deleteUploadedFiles,
+  reorderEvents,
+  saveSiteContent,
+  updateEvent,
+} from "@/lib/api";
 import { formatBytes, MAX_FILE_BYTES, uploadFile } from "@/lib/uploadFile";
 import type {
   AboutContent,
@@ -96,12 +104,14 @@ export function ErrorNote({ error }: { error: string | null }) {
 
 /* ---------- Image picker (admin uploads) ---------- */
 
-function ImagePicker({
+export function ImagePicker({
+  password,
   label,
   value,
   onChange,
   aspect = "aspect-[4/5]",
 }: {
+  password: string;
   label: string;
   value: string;
   onChange: (url: string) => void;
@@ -123,8 +133,13 @@ function ImagePicker({
     }
     setProgress(0);
     try {
+      const previous = value;
       const meta = await uploadFile(file, "site", setProgress);
       onChange(meta.url);
+      // The replaced upload is gone from the site, so clear it from storage.
+      if (previous && previous !== meta.url) {
+        void deleteUploadedFiles({ data: { password, urls: [previous] } });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed — try again.");
     } finally {
@@ -175,6 +190,132 @@ function ImagePicker({
   );
 }
 
+/* ---------- Multi-image picker (event galleries) ---------- */
+
+function MultiImagePicker({
+  password,
+  label,
+  values,
+  onChange,
+}: {
+  password: string;
+  label: string;
+  values: string[];
+  onChange: (urls: string[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFiles(files: File[]) {
+    setError(null);
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0) {
+      setError("Only image files are accepted.");
+      return;
+    }
+    const oversize = images.find((f) => f.size > MAX_FILE_BYTES);
+    if (oversize) {
+      setError(`${oversize.name} is ${formatBytes(oversize.size)} — the limit is 10 MB.`);
+      return;
+    }
+    // Upload sequentially, appending as each finishes so a failure midway
+    // keeps everything uploaded so far.
+    let next = [...values];
+    try {
+      for (let i = 0; i < images.length; i++) {
+        setUploading(images.length > 1 ? `Uploading ${i + 1} of ${images.length}…` : "Uploading…");
+        const meta = await uploadFile(images[i], "site", (p) =>
+          setUploading(
+            images.length > 1
+              ? `Uploading ${i + 1} of ${images.length} — ${Math.round(p)}%`
+              : `Uploading… ${Math.round(p)}%`,
+          ),
+        );
+        next = [...next, meta.url];
+        onChange(next);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed — try again.");
+    } finally {
+      setUploading(null);
+    }
+  }
+
+  return (
+    <div>
+      <span className={labelCls}>{label}</span>
+      <p className="-mt-1 mb-3 text-xs text-charcoal/60">
+        The first image is the cover shown in the grid — use “Make cover” to change it.
+      </p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="sr-only"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          if (files.length > 0) void handleFiles(files);
+        }}
+      />
+      <div className="flex flex-wrap gap-3">
+        {values.map((url, i) => (
+          <div
+            key={`${url}-${i}`}
+            className="relative h-28 w-40 overflow-hidden rounded-sm border border-ink/10 bg-ink/5"
+          >
+            <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            {i === 0 ? (
+              <span className="absolute left-1.5 top-1.5 rounded-sm bg-gold px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink">
+                Cover
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onChange([url, ...values.filter((_, idx) => idx !== i)])}
+                className="absolute inset-x-0 bottom-0 bg-ink/70 py-1 text-[11px] text-white hover:bg-gold hover:text-ink transition-colors"
+              >
+                Make cover
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                onChange(values.filter((_, idx) => idx !== i));
+                // Deleted from the gallery — clear the file from storage too.
+                void deleteUploadedFiles({ data: { password, urls: [url] } });
+              }}
+              aria-label="Delete image"
+              title="Delete image"
+              className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-ink/70 text-white hover:bg-destructive transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading !== null}
+          className="grid h-28 w-40 place-items-center rounded-sm border border-dashed border-ink/25 text-charcoal/70 hover:border-gold hover:text-gold transition-colors disabled:opacity-60"
+        >
+          {uploading !== null ? (
+            <span className="px-2 text-center text-xs">{uploading}</span>
+          ) : (
+            <span className="inline-flex flex-col items-center gap-1.5 text-xs">
+              <Upload className="h-4 w-4" />
+              {values.length > 0 ? "Add images" : "Upload images"}
+            </span>
+          )}
+        </button>
+      </div>
+      <ErrorNote error={error} />
+    </div>
+  );
+}
+
 /* ---------- About ---------- */
 
 export function AboutEditor({
@@ -205,6 +346,7 @@ export function AboutEditor({
         note="The copy and photo shown in the “About the Association” section on the homepage."
       />
       <ImagePicker
+        password={password}
         label="Section image"
         value={about.image}
         onChange={(url) => setAbout({ ...about, image: url })}
@@ -279,6 +421,7 @@ export function BearersEditor({
         {bearers.map((b, i) => (
           <div key={i} className="bg-white border border-ink/10 rounded-sm p-5 space-y-4">
             <ImagePicker
+              password={password}
               label={`Photo — ${b.role}`}
               value={b.image}
               onChange={(url) => setBearer(i, { image: url })}
@@ -322,7 +465,7 @@ export function EventsEditor({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -359,7 +502,7 @@ export function EventsEditor({
     setEditingId(null);
     setTitle("");
     setDescription("");
-    setImageUrl("");
+    setImageUrls([]);
     setError(null);
   }
 
@@ -369,22 +512,22 @@ export function EventsEditor({
       setError("Please enter a title.");
       return;
     }
-    if (!imageUrl) {
-      setError("Please upload an image for the event.");
+    if (imageUrls.length === 0) {
+      setError("Please upload at least one image for the event.");
       return;
     }
     setBusy(true);
     setError(null);
     try {
       if (editingId === null) {
-        const created = await createEvent({ data: { password, title, description, imageUrl } });
+        const created = await createEvent({ data: { password, title, description, imageUrls } });
         setEvents([...events, created]);
       } else {
-        await updateEvent({ data: { password, id: editingId, title, description, imageUrl } });
+        await updateEvent({ data: { password, id: editingId, title, description, imageUrls } });
         setEvents(
           events.map((ev) =>
             ev.id === editingId
-              ? { ...ev, title: title.trim(), description: description.trim(), imageUrl }
+              ? { ...ev, title: title.trim(), description: description.trim(), imageUrls }
               : ev,
           ),
         );
@@ -431,11 +574,11 @@ export function EventsEditor({
             className={`${inputCls} resize-none`}
           />
         </div>
-        <ImagePicker
-          label="Event image"
-          value={imageUrl}
-          onChange={setImageUrl}
-          aspect="aspect-[16/10]"
+        <MultiImagePicker
+          password={password}
+          label="Event images"
+          values={imageUrls}
+          onChange={setImageUrls}
         />
         <div className="flex items-center gap-4">
           <button
@@ -516,11 +659,18 @@ export function EventsEditor({
               <span className="w-6 shrink-0 text-center text-xs text-charcoal/50 font-mono">
                 {i + 1}
               </span>
-              <img
-                src={ev.imageUrl}
-                alt=""
-                className="h-16 w-24 shrink-0 object-cover rounded-sm border border-ink/10"
-              />
+              <span className="relative shrink-0">
+                <img
+                  src={ev.imageUrls[0]}
+                  alt=""
+                  className="h-16 w-24 object-cover rounded-sm border border-ink/10"
+                />
+                {ev.imageUrls.length > 1 && (
+                  <span className="absolute bottom-1 right-1 rounded-sm bg-ink/70 px-1.5 py-0.5 text-[10px] text-white">
+                    ×{ev.imageUrls.length}
+                  </span>
+                )}
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="font-medium text-ink truncate">{ev.title}</div>
                 <div className="text-xs text-charcoal/70 truncate">{ev.description}</div>
@@ -555,7 +705,7 @@ export function EventsEditor({
                   setEditingId(ev.id);
                   setTitle(ev.title);
                   setDescription(ev.description);
-                  setImageUrl(ev.imageUrl);
+                  setImageUrls(ev.imageUrls);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className="text-xs uppercase tracking-wider text-ink underline underline-offset-4 hover:text-gold min-h-11 px-2"
@@ -654,6 +804,11 @@ export function PaymentEditor({
   });
 
   const fields: { key: keyof PaymentContent; label: string; placeholder?: string }[] = [
+    {
+      key: "feePerYear",
+      label: "Membership Fee (per financial year, per person)",
+      placeholder: "e.g. ₹2,000",
+    },
     { key: "upiId", label: "UPI ID", placeholder: "e.g. gta@upi" },
     { key: "accountName", label: "Account Name" },
     { key: "accountNumber", label: "Account Number" },
@@ -675,6 +830,7 @@ export function PaymentEditor({
         note="The UPI QR and bank details shown on the homepage and at the end of the membership application."
       />
       <ImagePicker
+        password={password}
         label="UPI QR Code image"
         value={payment.qrImage}
         onChange={(url) => setPayment({ ...payment, qrImage: url })}

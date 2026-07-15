@@ -8,7 +8,7 @@ import { Contact } from "@/components/site/Contact";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
-import { getEvents, getSiteContent } from "@/lib/api";
+import { getEvents, getFoundingMembers, getSiteContent } from "@/lib/api";
 
 const orgJsonLd = {
   "@context": "https://schema.org",
@@ -62,8 +62,12 @@ const faqJsonLd = {
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [content, events] = await Promise.all([getSiteContent(), getEvents()]);
-    return { content, events };
+    const [content, events, founders] = await Promise.all([
+      getSiteContent(),
+      getEvents(),
+      getFoundingMembers(),
+    ]);
+    return { content, events, founders };
   },
   head: () => ({
     meta: [
@@ -96,7 +100,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const { content, events } = Route.useLoaderData();
+  const { content, events, founders } = Route.useLoaderData();
   useSmoothScroll();
   useReveal();
   return (
@@ -104,7 +108,7 @@ function Home() {
       <SiteHeader />
       <main>
         <Hero />
-        <About about={content.about} bearers={content.bearers} />
+        <About about={content.about} bearers={content.bearers} founders={founders} />
         <Activities events={events} />
         <Membership payment={content.payment} />
         <Contact contact={content.contact} />

@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Pencil,
   Plus,
   Receipt,
   Search,
@@ -245,6 +246,7 @@ export function MembersManager({
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "pending">("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [ledgerId, setLedgerId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -256,7 +258,9 @@ export function MembersManager({
       if (statusFilter !== "all" && m.status !== statusFilter) return false;
       if (paymentFilter !== "all" && m.paymentStatus !== paymentFilter) return false;
       if (!q) return true;
-      return [m.name, m.firmName, m.email, m.contact].some((v) => v.toLowerCase().includes(q));
+      return [m.name, m.firmName, m.email, m.contact, m.city].some((v) =>
+        v.toLowerCase().includes(q),
+      );
     });
   }, [members, query, statusFilter, paymentFilter]);
 
@@ -313,14 +317,16 @@ export function MembersManager({
       </div>
 
       {showAdd && (
-        <AddMemberForm
-          password={password}
-          onAdded={(m) => {
-            setMembers([...members, m]);
-            setShowAdd(false);
-          }}
-          onCancel={() => setShowAdd(false)}
-        />
+        <div className="mb-6">
+          <MemberForm
+            password={password}
+            onSaved={(m) => {
+              setMembers([...members, m]);
+              setShowAdd(false);
+            }}
+            onCancel={() => setShowAdd(false)}
+          />
+        </div>
       )}
 
       {/* Filters */}
@@ -330,7 +336,7 @@ export function MembersManager({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, firm, email or phone…"
+            placeholder="Search name, firm, city, email or phone…"
             className={`${inputCls} pl-10`}
           />
         </div>
@@ -375,12 +381,29 @@ export function MembersManager({
           const busy = busyId === m.id;
           const linkedApps = appsFor(m);
           const memberPayments = payments.filter((p) => p.memberId === m.id);
+          if (editId === m.id) {
+            return (
+              <li key={m.id}>
+                <MemberForm
+                  password={password}
+                  member={m}
+                  onSaved={(updated) => {
+                    setMembers(members.map((x) => (x.id === updated.id ? updated : x)));
+                    setEditId(null);
+                  }}
+                  onCancel={() => setEditId(null)}
+                />
+              </li>
+            );
+          }
           return (
             <li key={m.id} className="bg-white border border-ink/10 rounded-sm">
               <div className="flex flex-wrap items-center gap-3 p-4">
                 <div className="flex-1 min-w-52">
                   <div className="font-medium text-ink">{m.name}</div>
-                  <div className="text-sm text-charcoal">{m.firmName || "—"}</div>
+                  <div className="text-sm text-charcoal">
+                    {[m.firmName, m.city].filter(Boolean).join(" · ") || "—"}
+                  </div>
                   <div className="mt-0.5 text-xs text-charcoal/70 break-all">
                     {[m.contact, m.email].filter(Boolean).join(" · ") || "—"}
                   </div>
@@ -452,6 +475,16 @@ export function MembersManager({
                     Application{linkedApps.length > 1 ? `s (${linkedApps.length})` : ""}
                   </button>
                 )}
+
+                <button
+                  onClick={() => setEditId(m.id)}
+                  disabled={busy}
+                  aria-label={`Edit ${m.name}`}
+                  title="Edit member details"
+                  className="grid h-11 w-11 place-items-center text-charcoal/60 hover:text-gold disabled:opacity-50"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
 
                 <button
                   onClick={() => void remove(m)}
@@ -659,19 +692,23 @@ function PaymentLedger({
   );
 }
 
-function AddMemberForm({
+// Add a new member (no `member` prop) or edit an existing one's details.
+function MemberForm({
   password,
-  onAdded,
+  member,
+  onSaved,
   onCancel,
 }: {
   password: string;
-  onAdded: (m: Member) => void;
+  member?: Member;
+  onSaved: (m: Member) => void;
   onCancel: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [firmName, setFirmName] = useState("");
-  const [contact, setContact] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(member?.name ?? "");
+  const [firmName, setFirmName] = useState(member?.firmName ?? "");
+  const [contact, setContact] = useState(member?.contact ?? "");
+  const [email, setEmail] = useState(member?.email ?? "");
+  const [city, setCity] = useState(member?.city ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -684,18 +721,24 @@ function AddMemberForm({
     setBusy(true);
     setError(null);
     try {
-      const member = await addMember({ data: { password, name, firmName, contact, email } });
-      onAdded(member);
+      const saved = member
+        ? await updateMember({
+            data: { password, id: member.id, name, firmName, contact, email, city },
+          })
+        : await addMember({ data: { password, name, firmName, contact, email, city } });
+      onSaved(saved);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add member");
+      setError(err instanceof Error ? err.message : "Failed to save member");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="mb-6 bg-white border border-gold/40 rounded-sm p-5">
-      <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">New Member</div>
+    <form onSubmit={submit} className="bg-white border border-gold/40 rounded-sm p-5">
+      <div className="text-xs uppercase tracking-[0.22em] text-gold mb-4">
+        {member ? `Edit Member — ${member.name}` : "New Member"}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Name *</label>
@@ -727,6 +770,15 @@ function AddMemberForm({
             className={inputCls}
           />
         </div>
+        <div>
+          <label className={labelCls}>City</label>
+          <input
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="e.g. Raipur"
+            className={inputCls}
+          />
+        </div>
       </div>
       <div className="mt-5 flex items-center gap-4">
         <button
@@ -735,7 +787,7 @@ function AddMemberForm({
           className="inline-flex items-center gap-2 min-h-12 px-6 bg-ink text-white font-medium rounded-sm hover:bg-charcoal transition-colors disabled:opacity-60"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          Add Member
+          {member ? "Save Changes" : "Add Member"}
         </button>
         <button
           type="button"

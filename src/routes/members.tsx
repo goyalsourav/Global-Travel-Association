@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Users } from "lucide-react";
+import { MapPin, Search, Users } from "lucide-react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
@@ -42,7 +42,10 @@ function MembersPage() {
     const q = query.trim().toLowerCase();
     if (!q) return members;
     return members.filter(
-      (m) => m.name.toLowerCase().includes(q) || m.firmName.toLowerCase().includes(q),
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.firmName.toLowerCase().includes(q) ||
+        m.city.toLowerCase().includes(q),
     );
   }, [members, query]);
 
@@ -113,6 +116,12 @@ function MembersPage() {
                       {m.firmName || m.name}
                     </div>
                     {m.firmName && <div className="mt-1 text-sm text-charcoal">{m.name}</div>}
+                    {m.city && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-charcoal/70">
+                        <MapPin className="h-3.5 w-3.5 text-gold" />
+                        {m.city}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

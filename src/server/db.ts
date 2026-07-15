@@ -42,6 +42,14 @@ export function getDb() {
       await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0`;
       // Backfill any rows created before sort_order existed.
       await sql`UPDATE events SET sort_order = id WHERE sort_order = 0`;
+      // Events can carry a gallery of images; image_url stays as the cover.
+      await sql`
+        ALTER TABLE events ADD COLUMN IF NOT EXISTS image_urls JSONB NOT NULL DEFAULT '[]'::jsonb
+      `;
+      await sql`
+        UPDATE events SET image_urls = jsonb_build_array(image_url)
+        WHERE image_urls = '[]'::jsonb AND image_url <> ''
+      `;
       await sql`
         CREATE TABLE IF NOT EXISTS membership_applications (
           id SERIAL PRIMARY KEY,
@@ -69,6 +77,7 @@ export function getDb() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
       `;
+      await sql`ALTER TABLE members ADD COLUMN IF NOT EXISTS city TEXT NOT NULL DEFAULT ''`;
       await sql`
         CREATE TABLE IF NOT EXISTS member_payments (
           id SERIAL PRIMARY KEY,
@@ -76,6 +85,15 @@ export function getDb() {
           amount NUMERIC(12, 2) NOT NULL,
           paid_on DATE NOT NULL,
           note TEXT NOT NULL DEFAULT '',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS founding_members (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          image_url TEXT NOT NULL DEFAULT '',
+          sort_order INTEGER NOT NULL DEFAULT 0,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
       `;

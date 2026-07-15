@@ -17,6 +17,18 @@ export function PaymentPanel({ payment = defaultPayment }: { payment?: PaymentCo
       </p>
 
       <div className="mt-8 grid gap-6">
+        {payment.feePerYear && (
+          <div className="flex flex-wrap items-baseline justify-between gap-2 p-5 bg-gold/10 border border-gold/40">
+            <span className="text-xs uppercase tracking-[0.22em] text-gold">Membership Fee</span>
+            <span className="font-serif text-xl text-white">
+              {payment.feePerYear}
+              <span className="ml-2 text-sm text-white/60 font-sans">
+                per person / financial year
+              </span>
+            </span>
+          </div>
+        )}
+
         <div className="flex items-start gap-4 p-5 bg-white/5 border border-white/10">
           {payment.qrImage ? (
             <img

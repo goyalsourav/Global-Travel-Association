@@ -1,7 +1,7 @@
 import type { GtaEvent } from "@/data/siteContent";
 
 export type Activity = {
-  src: string;
+  images: string[]; // first image is the cover
   alt: string;
   title: string;
   caption: string;
@@ -12,7 +12,7 @@ export type Activity = {
 // scripts/seed-events.mjs.
 export function eventsToActivities(events: GtaEvent[]): Activity[] {
   return events.map((e) => ({
-    src: e.imageUrl,
+    images: e.imageUrls,
     alt: e.title,
     title: e.title,
     caption: e.description,

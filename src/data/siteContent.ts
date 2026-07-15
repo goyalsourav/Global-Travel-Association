@@ -23,11 +23,18 @@ export type ContactContent = {
   instagram: string;
 };
 
+export type FoundingMember = {
+  id: number;
+  name: string;
+  imageUrl: string;
+  createdAt: string;
+};
+
 export type GtaEvent = {
   id: number;
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrls: string[]; // first image is the cover
   createdAt: string;
 };
 
@@ -39,6 +46,7 @@ export type PaymentContent = {
   ifsc: string;
   bankName: string;
   branch: string;
+  feePerYear: string; // membership fee per financial year, per person
 };
 
 export type SiteContent = {
@@ -97,6 +105,7 @@ export const defaultPayment: PaymentContent = {
   ifsc: "[IFSC Code]",
   bankName: "[Bank Name]",
   branch: "[Branch]",
+  feePerYear: "",
 };
 
 export const defaultSiteContent: SiteContent = {

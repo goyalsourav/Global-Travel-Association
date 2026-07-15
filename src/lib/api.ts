@@ -1,11 +1,13 @@
 // Server functions (TanStack Start RPC). Public reads degrade gracefully when
 // the database isn't configured yet so the site still renders with defaults.
 import { createServerFn } from "@tanstack/react-start";
+import { del } from "@vercel/blob";
 import { getDb, isDbConfigured, requireAdmin, setAdminPassword } from "@/server/db";
 import type {
   AboutContent,
   Bearer,
   ContactContent,
+  FoundingMember,
   GtaEvent,
   PaymentContent,
   SiteContent,
@@ -26,17 +28,27 @@ type EventRow = {
   title: string;
   description: string;
   image_url: string;
+  image_urls: string[] | null;
   created_at: string;
 };
 
 function rowToEvent(r: EventRow): GtaEvent {
+  // Rows created before the gallery existed fall back to the single image_url.
+  const gallery = Array.isArray(r.image_urls) ? r.image_urls.filter(Boolean) : [];
   return {
     id: r.id,
     title: r.title,
     description: r.description,
-    imageUrl: r.image_url,
+    imageUrls: gallery.length > 0 ? gallery : r.image_url ? [r.image_url] : [],
     createdAt: new Date(r.created_at).toISOString(),
   };
+}
+
+function validateImageUrls(imageUrls: unknown): string[] {
+  if (!Array.isArray(imageUrls)) throw new Error("At least one image is required");
+  const urls = imageUrls.filter((u): u is string => typeof u === "string" && u.trim() !== "");
+  if (urls.length === 0) throw new Error("At least one image is required");
+  return urls;
 }
 
 // ---------- Public reads ----------
@@ -80,7 +92,7 @@ export const getEvents = createServerFn({ method: "GET" }).handler(
       const { sql, ready } = getDb();
       await ready;
       const rows = (await sql`
-        SELECT id, title, description, image_url, created_at
+        SELECT id, title, description, image_url, image_urls, created_at
         FROM events ORDER BY sort_order ASC, id ASC
       `) as EventRow[];
       return rows.map(rowToEvent);
@@ -90,6 +102,93 @@ export const getEvents = createServerFn({ method: "GET" }).handler(
     }
   },
 );
+
+// ---------- Founding members ----------
+
+type FoundingRow = {
+  id: number;
+  name: string;
+  image_url: string;
+  created_at: string;
+};
+
+function rowToFounding(r: FoundingRow): FoundingMember {
+  return {
+    id: r.id,
+    name: r.name,
+    imageUrl: r.image_url,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+export const getFoundingMembers = createServerFn({ method: "GET" }).handler(
+  async (): Promise<FoundingMember[]> => {
+    if (!isDbConfigured()) return [];
+    try {
+      const { sql, ready } = getDb();
+      await ready;
+      const rows = (await sql`
+        SELECT id, name, image_url, created_at
+        FROM founding_members ORDER BY sort_order ASC, id ASC
+      `) as FoundingRow[];
+      return rows.map(rowToFounding);
+    } catch (err) {
+      console.error("getFoundingMembers failed, returning none:", err);
+      return [];
+    }
+  },
+);
+
+export const addFoundingMember = createServerFn({ method: "POST" })
+  .validator((input: { password: string; name: string; imageUrl: string }) => {
+    if (!input.name?.trim()) throw new Error("Name is required");
+    return input;
+  })
+  .handler(async ({ data }): Promise<FoundingMember> => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    const rows = (await sql`
+      INSERT INTO founding_members (name, image_url, sort_order)
+      VALUES (${data.name.trim()}, ${data.imageUrl ?? ""},
+              (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM founding_members))
+      RETURNING id, name, image_url, created_at
+    `) as FoundingRow[];
+    return rowToFounding(rows[0]);
+  });
+
+export const updateFoundingMember = createServerFn({ method: "POST" })
+  .validator((input: { password: string; id: number; name: string; imageUrl: string }) => {
+    if (!input.name?.trim()) throw new Error("Name is required");
+    return input;
+  })
+  .handler(async ({ data }): Promise<FoundingMember> => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    const rows = (await sql`
+      UPDATE founding_members
+      SET name = ${data.name.trim()}, image_url = ${data.imageUrl ?? ""}
+      WHERE id = ${data.id}
+      RETURNING id, name, image_url, created_at
+    `) as FoundingRow[];
+    if (!rows[0]) throw new Error("Founding member not found");
+    return rowToFounding(rows[0]);
+  });
+
+export const deleteFoundingMember = createServerFn({ method: "POST" })
+  .validator((input: { password: string; id: number }) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    const rows = (await sql`
+      DELETE FROM founding_members WHERE id = ${data.id} RETURNING image_url
+    `) as { image_url: string }[];
+    // Remove the uploaded photo from storage as well.
+    await deleteBlobUrls(rows.map((r) => r.image_url).filter(Boolean));
+    return { ok: true };
+  });
 
 // ---------- Membership application ----------
 
@@ -136,6 +235,38 @@ export const adminVerify = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Best-effort removal of admin uploads from Vercel Blob. External URLs (e.g.
+// the default Unsplash images) and failures are ignored so content operations
+// never block on storage cleanup.
+async function deleteBlobUrls(urls: string[]): Promise<void> {
+  const blobUrls = urls.filter((u) => {
+    try {
+      return new URL(u).hostname.endsWith(".blob.vercel-storage.com");
+    } catch {
+      return false;
+    }
+  });
+  if (blobUrls.length === 0) return;
+  try {
+    await del(blobUrls);
+  } catch (err) {
+    console.error("Blob cleanup failed:", err);
+  }
+}
+
+// Called from the admin editors when an image is replaced or removed, so the
+// old file doesn't linger in storage.
+export const deleteUploadedFiles = createServerFn({ method: "POST" })
+  .validator((input: { password: string; urls: string[] }) => {
+    if (!Array.isArray(input.urls)) throw new Error("Invalid file list");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    await requireAdmin(data.password);
+    await deleteBlobUrls(data.urls.filter((u): u is string => typeof u === "string"));
+    return { ok: true };
+  });
+
 export const changeAdminPassword = createServerFn({ method: "POST" })
   .validator((input: { password: string; newPassword: string }) => {
     if (typeof input.newPassword !== "string" || input.newPassword.trim().length < 8) {
@@ -176,22 +307,25 @@ export const saveSiteContent = createServerFn({ method: "POST" })
 
 export const createEvent = createServerFn({ method: "POST" })
   .validator(
-    (input: { password: string; title: string; description: string; imageUrl: string }) => {
+    (input: { password: string; title: string; description: string; imageUrls: string[] }) => {
       if (!input.title?.trim()) throw new Error("Title is required");
-      if (!input.imageUrl?.trim()) throw new Error("An image is required");
+      validateImageUrls(input.imageUrls);
       return input;
     },
   )
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
+    const urls = validateImageUrls(data.imageUrls);
     const { sql, ready } = getDb();
     await ready;
     // New events append at the end of the display order; admin can reorder.
+    // image_url mirrors the first gallery image (the cover) for older readers.
     const rows = (await sql`
-      INSERT INTO events (title, description, image_url, sort_order)
-      VALUES (${data.title.trim()}, ${data.description.trim()}, ${data.imageUrl},
+      INSERT INTO events (title, description, image_url, image_urls, sort_order)
+      VALUES (${data.title.trim()}, ${data.description.trim()}, ${urls[0]},
+              ${JSON.stringify(urls)},
               (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM events))
-      RETURNING id, title, description, image_url, created_at
+      RETURNING id, title, description, image_url, image_urls, created_at
     `) as EventRow[];
     return rowToEvent(rows[0]);
   });
@@ -222,20 +356,22 @@ export const updateEvent = createServerFn({ method: "POST" })
       id: number;
       title: string;
       description: string;
-      imageUrl: string;
+      imageUrls: string[];
     }) => {
       if (!input.title?.trim()) throw new Error("Title is required");
+      validateImageUrls(input.imageUrls);
       return input;
     },
   )
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
+    const urls = validateImageUrls(data.imageUrls);
     const { sql, ready } = getDb();
     await ready;
     await sql`
       UPDATE events
       SET title = ${data.title.trim()}, description = ${data.description.trim()},
-          image_url = ${data.imageUrl}
+          image_url = ${urls[0]}, image_urls = ${JSON.stringify(urls)}
       WHERE id = ${data.id}
     `;
     return { ok: true };
@@ -247,7 +383,16 @@ export const deleteEvent = createServerFn({ method: "POST" })
     await requireAdmin(data.password);
     const { sql, ready } = getDb();
     await ready;
-    await sql`DELETE FROM events WHERE id = ${data.id}`;
+    const rows = (await sql`
+      DELETE FROM events WHERE id = ${data.id} RETURNING image_url, image_urls
+    `) as { image_url: string; image_urls: string[] | null }[];
+    // Remove the event's uploaded images from storage as well.
+    const urls = new Set<string>();
+    for (const r of rows) {
+      if (r.image_url) urls.add(r.image_url);
+      for (const u of r.image_urls ?? []) if (u) urls.add(u);
+    }
+    await deleteBlobUrls([...urls]);
     return { ok: true };
   });
 
@@ -301,6 +446,7 @@ type MemberRow = {
   firm_name: string;
   contact: string;
   email: string;
+  city: string;
   status: MemberStatus;
   payment_status: PaymentStatus;
   paid_at: string | null;
@@ -315,6 +461,7 @@ function rowToMember(r: MemberRow): Member {
     firmName: r.firm_name,
     contact: r.contact,
     email: r.email,
+    city: r.city,
     status: r.status,
     paymentStatus: r.payment_status,
     paidAt: r.paid_at ? new Date(r.paid_at).toISOString() : null,
@@ -331,10 +478,10 @@ export const getPublicMembers = createServerFn({ method: "GET" }).handler(
       const { sql, ready } = getDb();
       await ready;
       const rows = (await sql`
-        SELECT id, name, firm_name FROM members
+        SELECT id, name, firm_name, city FROM members
         WHERE status = 'active' ORDER BY lower(name) ASC
-      `) as { id: number; name: string; firm_name: string }[];
-      return rows.map((r) => ({ id: r.id, name: r.name, firmName: r.firm_name }));
+      `) as { id: number; name: string; firm_name: string; city: string }[];
+      return rows.map((r) => ({ id: r.id, name: r.name, firmName: r.firm_name, city: r.city }));
     } catch (err) {
       console.error("getPublicMembers failed, returning none:", err);
       return [];
@@ -349,7 +496,7 @@ export const adminGetMembers = createServerFn({ method: "POST" })
     const { sql, ready } = getDb();
     await ready;
     const rows = (await sql`
-      SELECT id, name, firm_name, contact, email, status, payment_status, paid_at,
+      SELECT id, name, firm_name, contact, email, city, status, payment_status, paid_at,
              application_id, created_at
       FROM members ORDER BY lower(name) ASC
     `) as MemberRow[];
@@ -364,6 +511,7 @@ export const addMember = createServerFn({ method: "POST" })
       firmName: string;
       contact: string;
       email: string;
+      city?: string;
     }) => {
       if (!input.name?.trim()) throw new Error("Member name is required");
       return input;
@@ -374,10 +522,10 @@ export const addMember = createServerFn({ method: "POST" })
     const { sql, ready } = getDb();
     await ready;
     const rows = (await sql`
-      INSERT INTO members (name, firm_name, contact, email)
+      INSERT INTO members (name, firm_name, contact, email, city)
       VALUES (${data.name.trim()}, ${data.firmName.trim()}, ${data.contact.trim()},
-              ${data.email.trim()})
-      RETURNING id, name, firm_name, contact, email, status, payment_status, paid_at,
+              ${data.email.trim()}, ${data.city?.trim() ?? ""})
+      RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
                 application_id, created_at
     `) as MemberRow[];
     return rowToMember(rows[0]);
@@ -390,12 +538,20 @@ export const updateMember = createServerFn({ method: "POST" })
       id: number;
       status?: MemberStatus;
       paymentStatus?: PaymentStatus;
+      name?: string;
+      firmName?: string;
+      contact?: string;
+      email?: string;
+      city?: string;
     }) => {
       if (input.status && !["active", "inactive"].includes(input.status)) {
         throw new Error("Invalid member status");
       }
       if (input.paymentStatus && !["pending", "paid"].includes(input.paymentStatus)) {
         throw new Error("Invalid payment status");
+      }
+      if (input.name !== undefined && !input.name.trim()) {
+        throw new Error("Member name is required");
       }
       return input;
     },
@@ -415,8 +571,24 @@ export const updateMember = createServerFn({ method: "POST" })
         WHERE id = ${data.id}
       `;
     }
+    // Detail edits: undefined leaves a column untouched (COALESCE skips NULL),
+    // while an empty string clears it.
+    const norm = (v?: string) => (v === undefined ? null : v.trim());
+    if (
+      [data.name, data.firmName, data.contact, data.email, data.city].some((v) => v !== undefined)
+    ) {
+      await sql`
+        UPDATE members
+        SET name = COALESCE(${norm(data.name)}, name),
+            firm_name = COALESCE(${norm(data.firmName)}, firm_name),
+            contact = COALESCE(${norm(data.contact)}, contact),
+            email = COALESCE(${norm(data.email)}, email),
+            city = COALESCE(${norm(data.city)}, city)
+        WHERE id = ${data.id}
+      `;
+    }
     const rows = (await sql`
-      SELECT id, name, firm_name, contact, email, status, payment_status, paid_at,
+      SELECT id, name, firm_name, contact, email, city, status, payment_status, paid_at,
              application_id, created_at
       FROM members WHERE id = ${data.id}
     `) as MemberRow[];
@@ -504,7 +676,7 @@ export const addMemberPayment = createServerFn({ method: "POST" })
     const memberRows = (await sql`
       UPDATE members SET payment_status = 'paid', paid_at = ${data.paidOn}
       WHERE id = ${data.memberId}
-      RETURNING id, name, firm_name, contact, email, status, payment_status, paid_at,
+      RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
                 application_id, created_at
     `) as MemberRow[];
     if (!memberRows[0]) throw new Error("Member not found");
@@ -543,7 +715,7 @@ export const approveApplication = createServerFn({ method: "POST" })
     if (!app) throw new Error("Application not found");
 
     const existing = (await sql`
-      SELECT id, name, firm_name, contact, email, status, payment_status, paid_at,
+      SELECT id, name, firm_name, contact, email, city, status, payment_status, paid_at,
              application_id, created_at
       FROM members WHERE lower(email) = ${app.email.toLowerCase()} LIMIT 1
     `) as MemberRow[];
@@ -558,7 +730,7 @@ export const approveApplication = createServerFn({ method: "POST" })
     const rows = (await sql`
       INSERT INTO members (name, firm_name, contact, email, application_id)
       VALUES (${name}, ${firm}, ${contact}, ${app.email}, ${app.id})
-      RETURNING id, name, firm_name, contact, email, status, payment_status, paid_at,
+      RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
                 application_id, created_at
     `) as MemberRow[];
     if (app.status === "submitted") {

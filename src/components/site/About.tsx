@@ -1,8 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import { defaultAbout, defaultBearers, type AboutContent, type Bearer } from "@/data/siteContent";
+import {
+  defaultAbout,
+  defaultBearers,
+  type AboutContent,
+  type Bearer,
+  type FoundingMember,
+} from "@/data/siteContent";
+import { FoundersCarousel } from "./FoundersCarousel";
 
-const founders = [
+// Shown until founding members are added from the admin panel.
+const defaultFounderNames = [
   "Shubham Agrawal",
   "Manish Jain",
   "Rahul Waswani",
@@ -11,6 +19,13 @@ const founders = [
   "Satish Kumar",
   "Shailesh Agrawal",
 ];
+
+const fallbackFounders: FoundingMember[] = defaultFounderNames.map((name, i) => ({
+  id: -(i + 1),
+  name,
+  imageUrl: "",
+  createdAt: "",
+}));
 
 const roadmap = [
   {
@@ -38,10 +53,13 @@ const roadmap = [
 export function About({
   about = defaultAbout,
   bearers = defaultBearers,
+  founders = [],
 }: {
   about?: AboutContent;
   bearers?: Bearer[];
+  founders?: FoundingMember[];
 }) {
+  const founderCards = founders.length > 0 ? founders : fallbackFounders;
   return (
     <section id="about" className="relative bg-background text-foreground py-24 md:py-32">
       <div className="container-page">
@@ -131,17 +149,10 @@ export function About({
             Founding Members
           </span>
           <h3 className="mt-3 font-serif text-2xl md:text-3xl text-ink">
-            The seven who started it.
+            The people who started it.
           </h3>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {founders.map((f) => (
-              <span
-                key={f}
-                className="px-4 py-2 bg-white text-ink text-sm border border-ink/10 rounded-full"
-              >
-                {f}
-              </span>
-            ))}
+          <div className="mt-8">
+            <FoundersCarousel founders={founderCards} />
           </div>
           <div className="mt-8">
             <Link

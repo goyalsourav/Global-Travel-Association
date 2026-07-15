@@ -7,13 +7,15 @@ import {
   adminVerify,
   getApplications,
   getEvents,
+  getFoundingMembers,
   getSiteContent,
   type ApplicationRecord,
 } from "@/lib/api";
-import type { GtaEvent, SiteContent } from "@/data/siteContent";
+import type { FoundingMember, GtaEvent, SiteContent } from "@/data/siteContent";
 import type { Member, MemberPayment } from "@/data/members";
 import { AboutEditor, BearersEditor, ContactEditor, EventsEditor, PaymentEditor } from "./editors";
 import { ApplicationsManager, MembersManager } from "./membersAdmin";
+import { FoundingMembersManager } from "./foundingAdmin";
 import { SettingsManager } from "./settingsAdmin";
 
 const AUTH_KEY = "gta-admin-auth";
@@ -25,6 +27,7 @@ const TABS = [
   "Payment",
   "About",
   "Office Bearers",
+  "Founding Members",
   "Contact",
   "Settings",
 ] as const;
@@ -152,6 +155,7 @@ function Dashboard({
   const [members, setMembers] = useState<Member[] | null>(null);
   const [payments, setPayments] = useState<MemberPayment[] | null>(null);
   const [applications, setApplications] = useState<ApplicationRecord[] | null>(null);
+  const [founders, setFounders] = useState<FoundingMember[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -161,13 +165,15 @@ function Dashboard({
       adminGetMembers({ data: { password } }),
       getApplications({ data: { password } }),
       adminGetPayments({ data: { password } }),
+      getFoundingMembers(),
     ])
-      .then(([c, e, m, a, p]) => {
+      .then(([c, e, m, a, p, f]) => {
         setContent(c);
         setEvents(e);
         setMembers(m);
         setApplications(a);
         setPayments(p);
+        setFounders(f);
       })
       .catch((err) =>
         setLoadError(err instanceof Error ? err.message : "Failed to load site content"),
@@ -223,7 +229,7 @@ function Dashboard({
             {loadError} — check that DATABASE_URL is configured.
           </p>
         )}
-        {!content || !events || !members || !applications || !payments ? (
+        {!content || !events || !members || !applications || !payments || !founders ? (
           <div className="flex items-center gap-2 text-charcoal py-16 justify-center">
             <Loader2 className="h-5 w-5 animate-spin" /> Loading content…
           </div>
@@ -260,6 +266,13 @@ function Dashboard({
                 password={password}
                 initial={content.bearers}
                 onSaved={(bearers) => setContent({ ...content, bearers })}
+              />
+            )}
+            {tab === "Founding Members" && (
+              <FoundingMembersManager
+                password={password}
+                founders={founders}
+                setFounders={setFounders}
               />
             )}
             {tab === "Events" && (

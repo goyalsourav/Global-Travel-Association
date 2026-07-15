@@ -10,6 +10,7 @@ export type Member = {
   firmName: string;
   contact: string;
   email: string;
+  city: string;
   status: MemberStatus;
   paymentStatus: PaymentStatus;
   paidAt: string | null;
@@ -22,6 +23,7 @@ export type PublicMember = {
   id: number;
   name: string;
   firmName: string;
+  city: string;
 };
 
 // One entry in a member's payment ledger (admin only).
