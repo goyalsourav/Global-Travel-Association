@@ -64,7 +64,7 @@ function JoinPage() {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter contact={content.contact} />
       <FloatingActions />
     </div>
   );

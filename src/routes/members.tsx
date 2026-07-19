@@ -5,10 +5,13 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
-import { getPublicMembers } from "@/lib/api";
+import { getPublicMembers, getSiteContent } from "@/lib/api";
 
 export const Route = createFileRoute("/members")({
-  loader: async () => ({ members: await getPublicMembers() }),
+  loader: async () => {
+    const [members, content] = await Promise.all([getPublicMembers(), getSiteContent()]);
+    return { members, content };
+  },
   head: () => ({
     meta: [
       { title: "Our Members — Global Travel Association (GTA)" },
@@ -33,7 +36,7 @@ export const Route = createFileRoute("/members")({
 });
 
 function MembersPage() {
-  const { members } = Route.useLoaderData();
+  const { members, content } = Route.useLoaderData();
   const [query, setQuery] = useState("");
   useSmoothScroll();
   useReveal();
@@ -129,7 +132,7 @@ function MembersPage() {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter contact={content.contact} />
       <FloatingActions />
     </div>
   );

@@ -113,7 +113,7 @@ function Home() {
         <Membership payment={content.payment} />
         <Contact contact={content.contact} />
       </main>
-      <SiteFooter />
+      <SiteFooter contact={content.contact} />
       <FloatingActions />
     </div>
   );

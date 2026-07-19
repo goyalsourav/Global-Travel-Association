@@ -7,13 +7,16 @@ import { FloatingActions } from "@/components/site/FloatingActions";
 import { ActivityGrid } from "@/components/site/ActivityGrid";
 import { eventsToActivities } from "@/data/activities";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
-import { getEvents } from "@/lib/api";
+import { getEvents, getSiteContent } from "@/lib/api";
 
 // How many grid tiles are shown before the "Show More" button appears.
 const INITIAL_COUNT = 9;
 
 export const Route = createFileRoute("/activities")({
-  loader: async () => ({ events: await getEvents() }),
+  loader: async () => {
+    const [events, content] = await Promise.all([getEvents(), getSiteContent()]);
+    return { events, content };
+  },
   head: () => ({
     meta: [
       { title: "Activities & Events — Global Travel Association (GTA)" },
@@ -38,7 +41,7 @@ export const Route = createFileRoute("/activities")({
 });
 
 function ActivitiesPage() {
-  const { events } = Route.useLoaderData();
+  const { events, content } = Route.useLoaderData();
   const [showAll, setShowAll] = useState(false);
   useSmoothScroll();
   useReveal();
@@ -83,7 +86,7 @@ function ActivitiesPage() {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter contact={content.contact} />
       <FloatingActions />
     </div>
   );
