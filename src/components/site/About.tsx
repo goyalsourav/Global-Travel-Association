@@ -8,6 +8,7 @@ import {
   type FoundingMember,
 } from "@/data/siteContent";
 import { FoundersCarousel } from "./FoundersCarousel";
+import { AdaptiveImage } from "./AdaptiveImage";
 
 // Shown until founding members are added from the admin panel.
 const defaultFounderNames = [
@@ -65,11 +66,10 @@ export function About({
       <div className="container-page">
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           <div className="lg:col-span-5" data-reveal>
-            <img
+            <AdaptiveImage
               src={about.image}
               alt="GTA leadership and members convened at a professional gathering"
-              className="w-full aspect-[4/5] object-cover rounded-sm"
-              loading="lazy"
+              className="rounded-sm"
             />
             <div className="mt-4 bg-gold text-ink p-6">
               <div className="text-4xl font-serif">2024</div>
