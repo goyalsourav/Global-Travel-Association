@@ -29,8 +29,8 @@ const fallbackFounders: FoundingMember[] = defaultFounderNames.map((name, i) => 
 
 const roadmap = [
   {
-    year: "2026",
-    title: "Founded in Raipur",
+    year: "2024",
+    title: "Founded in Chhattisgarh",
     detail: "Established as a professional association for travel agencies in Chhattisgarh.",
   },
   {
@@ -73,9 +73,9 @@ export function About({
                 loading="lazy"
               />
               <div className="absolute -bottom-6 -right-6 hidden md:block bg-ink text-white p-6 max-w-[240px] border-l-2 border-gold">
-                <div className="text-4xl font-serif text-gold">2026</div>
+                <div className="text-4xl font-serif text-gold">2024</div>
                 <div className="mt-2 text-xs uppercase tracking-[0.24em] text-white/60">
-                  Founded in Raipur, Chhattisgarh
+                  Founded in Chhattisgarh
                 </div>
               </div>
             </div>
@@ -172,7 +172,7 @@ export function About({
               Roadmap
             </span>
             <h3 className="mt-3 font-serif text-3xl md:text-4xl text-ink">
-              From Raipur to the world.
+              From Chhattisgarh to the world.
             </h3>
           </div>
           <ol className="mt-12 relative grid md:grid-cols-4 gap-8">

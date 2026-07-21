@@ -17,13 +17,12 @@ const orgJsonLd = {
   alternateName: "GTA",
   url: "https://www.globaltravelassociation.com",
   email: "globaltravelsassociation@gmail.com",
-  foundingDate: "2026",
+  foundingDate: "2024",
   slogan: "Integrate — Innovate — Inspire",
   description:
-    "Global Travel Association (GTA) is an India-based association of travel agencies established in 2026, headquartered in Raipur, Chhattisgarh, uniting and empowering travel agencies through collaboration, knowledge sharing and ethical business practices.",
+    "Global Travel Association (GTA) is an India-based association of travel agencies established in 2024, headquartered in Chhattisgarh, uniting and empowering travel agencies through collaboration, knowledge sharing and ethical business practices.",
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Raipur",
     addressRegion: "Chhattisgarh",
     addressCountry: "IN",
   },
@@ -38,7 +37,7 @@ const faqJsonLd = {
       name: "What is Global Travel Association?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Global Travel Association (GTA) is an India-based association of travel agencies established in 2026 with a global vision to unite, empower and elevate travel agencies through collaboration, knowledge sharing and ethical business practices.",
+        text: "Global Travel Association (GTA) is an India-based association of travel agencies established in 2024 with a global vision to unite, empower and elevate travel agencies through collaboration, knowledge sharing and ethical business practices.",
       },
     },
     {
@@ -46,7 +45,7 @@ const faqJsonLd = {
       name: "Where is GTA based?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "GTA is headquartered in Raipur, Chhattisgarh, India, and is expanding across Chhattisgarh and PAN India.",
+        text: "GTA is headquartered in Chhattisgarh, India, and is expanding across PAN India.",
       },
     },
     {
@@ -75,7 +74,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2026 in Raipur, uniting travel professionals PAN India through collaboration, events and ethical practice.",
+          "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2024 in Chhattisgarh, uniting travel professionals PAN India through collaboration, events and ethical practice.",
       },
       {
         property: "og:title",
@@ -84,7 +83,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2026 in Raipur, uniting travel professionals PAN India through collaboration, events and ethical practice.",
+          "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2024 in Chhattisgarh, uniting travel professionals PAN India through collaboration, events and ethical practice.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },

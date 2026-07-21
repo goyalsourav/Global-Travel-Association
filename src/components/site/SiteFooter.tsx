@@ -15,8 +15,8 @@ export function SiteFooter({ contact = defaultContact }: { contact?: ContactCont
           </div>
           <p className="mt-4 italic text-gold font-serif">Integrate — Innovate — Inspire</p>
           <p className="mt-4 max-w-md text-sm text-white/60 leading-relaxed">
-            An India-based association of travel agencies established in 2026, headquartered in
-            Raipur, Chhattisgarh — expanding PAN India.
+            An India-based association of travel agencies established in 2024, headquartered in
+            Chhattisgarh — expanding PAN India.
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export function SiteFooter({ contact = defaultContact }: { contact?: ContactCont
       </div>
       <div className="border-t border-white/5">
         <div className="container-page py-6 flex flex-wrap items-center justify-between gap-3 text-xs text-white/50">
-          <div>© 2026 Global Travel Association. All rights reserved.</div>
+          <div>© 2024 Global Travel Association. All rights reserved.</div>
           <div>Designed with intent · Made in India</div>
         </div>
       </div>

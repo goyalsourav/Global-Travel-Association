@@ -22,7 +22,7 @@ export function Hero() {
         <div className="flex justify-center mb-8" data-reveal>
           <div className="flex items-center gap-3 px-4 py-2 border border-gold/40 rounded-full text-gold text-xs uppercase tracking-[0.28em]">
             <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-            Est. 2026 · Raipur, India
+            Est. 2024 · Chhattisgarh, India
           </div>
         </div>
 

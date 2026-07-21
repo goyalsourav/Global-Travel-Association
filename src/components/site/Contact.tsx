@@ -65,8 +65,8 @@ export function Contact({ contact = defaultContact }: { contact?: ContactContent
 
             <div className="sm:col-span-2 aspect-[16/7] bg-ink/5 overflow-hidden">
               <iframe
-                title="GTA location — Raipur, Chhattisgarh"
-                src="https://www.google.com/maps?q=Raipur%2C+Chhattisgarh&output=embed"
+                title="GTA location — Chhattisgarh"
+                src="https://www.google.com/maps?q=Chhattisgarh&output=embed"
                 className="w-full h-full grayscale contrast-125"
                 loading="lazy"
               />
