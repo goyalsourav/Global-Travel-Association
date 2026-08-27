@@ -58,7 +58,7 @@ export type SiteContent = {
 
 export const defaultAbout: AboutContent = {
   intro:
-    "Global Travel Association (GTA) is an India-based association established in 2026 with a global vision to unite, empower, and elevate travel agencies through collaboration, knowledge sharing, and ethical business practices.",
+    "Global Travel Association (GTA) is an India-based association established in 2024 with a global vision to unite, empower, and elevate travel agencies through collaboration, knowledge sharing, and ethical business practices.",
   vision:
     "To become India's most trusted and respected association of travel agencies, building a strong national network with meaningful global partnerships that inspire growth, innovation, and excellence across the travel industry.",
   mission:
@@ -91,7 +91,7 @@ export const defaultBearers: Bearer[] = [
 export const defaultContact: ContactContent = {
   email: "globaltravelsassociation@gmail.com",
   phone: "[Phone Number]",
-  address: "Raipur, Chhattisgarh, India",
+  address: "Chhattisgarh, India",
   website: "https://www.globaltravelassociation.com",
   instagram:
     "https://www.instagram.com/global_travel_aassociation?igsh=YTRveHdtNmJpN3Vp&utm_source=qr",

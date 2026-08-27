@@ -5,10 +5,13 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { FloatingActions } from "@/components/site/FloatingActions";
 import { useReveal, useSmoothScroll } from "@/lib/motion";
-import { getPublicMembers } from "@/lib/api";
+import { getPublicMembers, getSiteContent } from "@/lib/api";
 
 export const Route = createFileRoute("/members")({
-  loader: async () => ({ members: await getPublicMembers() }),
+  loader: async () => {
+    const [members, content] = await Promise.all([getPublicMembers(), getSiteContent()]);
+    return { members, content };
+  },
   head: () => ({
     meta: [
       { title: "Our Members — Global Travel Association (GTA)" },
@@ -33,7 +36,7 @@ export const Route = createFileRoute("/members")({
 });
 
 function MembersPage() {
-  const { members } = Route.useLoaderData();
+  const { members, content } = Route.useLoaderData();
   const [query, setQuery] = useState("");
   useSmoothScroll();
   useReveal();
@@ -112,10 +115,12 @@ function MembersPage() {
                       <span className="h-1.5 w-1.5 rounded-full bg-gold" />
                       <span className="text-xs uppercase tracking-[0.22em]">Member</span>
                     </div>
-                    <div className="mt-3 font-serif text-xl text-ink leading-snug">
+                    <div className="mt-3 font-serif font-semibold text-xl text-ink leading-snug">
                       {m.firmName || m.name}
                     </div>
-                    {m.firmName && <div className="mt-1 text-sm text-charcoal">{m.name}</div>}
+                    {m.firmName && (
+                      <div className="mt-1 text-sm font-normal text-charcoal">{m.name}</div>
+                    )}
                     {m.city && (
                       <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-charcoal/70">
                         <MapPin className="h-3.5 w-3.5 text-gold" />
@@ -129,7 +134,7 @@ function MembersPage() {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <SiteFooter contact={content.contact} />
       <FloatingActions />
     </div>
   );

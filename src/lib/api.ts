@@ -479,7 +479,7 @@ export const getPublicMembers = createServerFn({ method: "GET" }).handler(
       await ready;
       const rows = (await sql`
         SELECT id, name, firm_name, city FROM members
-        WHERE status = 'active' ORDER BY lower(name) ASC
+        WHERE status = 'active' ORDER BY lower(firm_name) ASC
       `) as { id: number; name: string; firm_name: string; city: string }[];
       return rows.map((r) => ({ id: r.id, name: r.name, firmName: r.firm_name, city: r.city }));
     } catch (err) {

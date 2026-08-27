@@ -8,6 +8,7 @@ import {
   type FoundingMember,
 } from "@/data/siteContent";
 import { FoundersCarousel } from "./FoundersCarousel";
+import { AdaptiveImage } from "./AdaptiveImage";
 
 // Shown until founding members are added from the admin panel.
 const defaultFounderNames = [
@@ -29,8 +30,8 @@ const fallbackFounders: FoundingMember[] = defaultFounderNames.map((name, i) => 
 
 const roadmap = [
   {
-    year: "2026",
-    title: "Founded in Raipur",
+    year: "2024",
+    title: "Founded in Chhattisgarh",
     detail: "Established as a professional association for travel agencies in Chhattisgarh.",
   },
   {
@@ -65,18 +66,15 @@ export function About({
       <div className="container-page">
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           <div className="lg:col-span-5" data-reveal>
-            <div className="relative">
-              <img
-                src={about.image}
-                alt="GTA leadership and members convened at a professional gathering"
-                className="w-full aspect-[4/5] object-cover rounded-sm"
-                loading="lazy"
-              />
-              <div className="absolute -bottom-6 -right-6 hidden md:block bg-ink text-white p-6 max-w-[240px] border-l-2 border-gold">
-                <div className="text-4xl font-serif text-gold">2026</div>
-                <div className="mt-2 text-xs uppercase tracking-[0.24em] text-white/60">
-                  Founded in Raipur, Chhattisgarh
-                </div>
+            <AdaptiveImage
+              src={about.image}
+              alt="GTA leadership and members convened at a professional gathering"
+              className="rounded-sm"
+            />
+            <div className="mt-4 bg-gold text-ink p-6">
+              <div className="text-4xl font-serif">2024</div>
+              <div className="mt-2 text-xs uppercase tracking-[0.24em] text-ink/70">
+                Founded in Chhattisgarh
               </div>
             </div>
           </div>
@@ -172,7 +170,7 @@ export function About({
               Roadmap
             </span>
             <h3 className="mt-3 font-serif text-3xl md:text-4xl text-ink">
-              From Raipur to the world.
+              From Chhattisgarh to the world.
             </h3>
           </div>
           <ol className="mt-12 relative grid md:grid-cols-4 gap-8">
