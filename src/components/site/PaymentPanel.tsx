@@ -10,11 +10,11 @@ export function PaymentPanel({ payment = defaultPayment }: { payment?: PaymentCo
         <span className="gold-rule" />
         Membership Payment
       </span>
-      <h3 className="mt-3 font-serif text-2xl">Pay via UPI or bank transfer.</h3>
+      {/* <h3 className="mt-3 font-serif text-2xl">Pay via UPI or bank transfer.</h3>
       <p className="mt-2 text-sm text-white/70">
         Complete your payment after submitting the form. Our team will confirm your membership
         within 24–48 hours.
-      </p>
+      </p> */}
 
       <div className="mt-8 grid gap-6">
         {payment.feePerYear && (
@@ -29,7 +29,7 @@ export function PaymentPanel({ payment = defaultPayment }: { payment?: PaymentCo
           </div>
         )}
 
-        <div className="flex items-start gap-4 p-5 bg-white/5 border border-white/10">
+        {/* <div className="flex items-start gap-4 p-5 bg-white/5 border border-white/10">
           {payment.qrImage ? (
             <img
               src={payment.qrImage}
@@ -52,9 +52,9 @@ export function PaymentPanel({ payment = defaultPayment }: { payment?: PaymentCo
               )
             )}
           </div>
-        </div>
+        </div> */}
 
-        <div className="p-5 bg-white/5 border border-white/10">
+        {/* <div className="p-5 bg-white/5 border border-white/10">
           <div className="flex items-center gap-2 text-gold text-xs uppercase tracking-[0.22em]">
             <Building2 className="h-4 w-4" /> Bank Transfer
           </div>
@@ -65,7 +65,7 @@ export function PaymentPanel({ payment = defaultPayment }: { payment?: PaymentCo
             <BankRow label="Bank Name" value={payment.bankName} />
             <BankRow label="Branch" value={payment.branch} />
           </dl>
-        </div>
+        </div> */}
       </div>
     </div>
   );
