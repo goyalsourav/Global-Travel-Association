@@ -746,8 +746,8 @@ export const approveApplication = createServerFn({ method: "POST" })
       RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
                 application_id, created_at
     `) as MemberRow[];
-    if (app.status === "submitted") {
-      await sql`UPDATE membership_applications SET status = 'reviewed' WHERE id = ${app.id}`;
+    if (app.status === "submitted" || app.status === "reviewed") {
+      await sql`UPDATE membership_applications SET status = 'approved' WHERE id = ${app.id}`;
     }
     return rowToMember(rows[0]);
   });

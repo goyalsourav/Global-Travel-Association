@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   ChevronDown,
   ChevronUp,
+  Download,
   Loader2,
   Pencil,
   Plus,
@@ -110,9 +111,9 @@ export function ApplicationsManager({
     try {
       const member = await approveApplication({ data: { password, applicationId: app.id } });
       if (!members.some((m) => m.id === member.id)) setMembers([...members, member]);
-      if (app.status === "submitted") {
+      if (app.status === "submitted" || app.status === "reviewed") {
         setApplications(
-          applications.map((a) => (a.id === app.id ? { ...a, status: "reviewed" } : a)),
+          applications.map((a) => (a.id === app.id ? { ...a, status: "approved" } : a)),
         );
       }
     } catch (err) {
@@ -160,12 +161,159 @@ export function ApplicationsManager({
     }
   }
 
+  function exportToCsv() {
+    if (applications.length === 0) return;
+
+    const headers = [
+      "Application ID",
+      "Timestamp",
+      "Status",
+      "Full Name",
+      "Email",
+      "Contact Number",
+      "Designation",
+      "Company Name",
+      "Office Address",
+      "Business Email",
+      "Establishment Year",
+      "Years Experience",
+      "Expertise / USP",
+      "Other Business",
+      "Current Account",
+      "Associations",
+      "Reference 1",
+      "Reference 2",
+      "Reason to Join",
+      "Social Links",
+      "Profile Picture URL",
+      "Aadhar Card URL",
+      "Workspace Photo URL",
+      "GST Certificate URL",
+      "MSME License URL",
+      "Visiting Card URL",
+      "Other Documents",
+    ];
+
+    const escapeCsv = (val: unknown): string => {
+      const s = String(val ?? "").replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    const getFileUrl = (files: Record<string, unknown>, key: string): string => {
+      const f = files[key];
+      if (!f) return "";
+      if (typeof f === "string") return f;
+      if (typeof f === "object" && f !== null && "url" in f) {
+        return String((f as { url: unknown }).url || "");
+      }
+      return "";
+    };
+
+    const rows = applications.map((app) => {
+      const v = app.data?.values ?? {};
+      const files = (app.data?.files ?? {}) as Record<string, unknown>;
+
+      const str = (key: string): string =>
+        typeof v[key] === "string" ? (v[key] as string) : "";
+      const joinArr = (key: string): string =>
+        Array.isArray(v[key]) ? (v[key] as string[]).join(", ") : str(key);
+
+      const ref1 = [str("ref1Name"), str("ref1Phone")].filter(Boolean).join(" · ") || "—";
+      const ref2 = [str("ref2Name"), str("ref2Phone")].filter(Boolean).join(" · ") || "—";
+
+      const associations = joinArr("associations");
+      const assocOther = str("associationOther");
+      const associationsFull =
+        assocOther && associations.includes("Other")
+          ? associations.replace("Other", `Other: ${assocOther}`)
+          : associations;
+
+      const standardKeys = new Set([
+        "profilePicture",
+        "aadhar",
+        "workspacePhoto",
+        "gstCertificate",
+        "msmeLicense",
+        "visitingCard",
+      ]);
+      const otherFiles = Object.entries(files)
+        .filter(([k, val]) => !standardKeys.has(k) && val)
+        .map(([k, val]) => {
+          const u =
+            typeof val === "string"
+              ? val
+              : typeof val === "object" && val !== null && "url" in val
+                ? String((val as { url: unknown }).url || "")
+                : "";
+          return u ? `${k}: ${u}` : "";
+        })
+        .filter(Boolean)
+        .join(" | ");
+
+      return [
+        app.id,
+        new Date(app.createdAt).toLocaleString("en-IN"),
+        applicationStatusLabel(app.status),
+        app.name || str("name"),
+        app.email,
+        str("contactNumber"),
+        str("designation"),
+        str("companyName"),
+        str("officeAddress"),
+        str("businessEmail"),
+        str("establishmentYear"),
+        str("yearsExperience"),
+        str("expertise"),
+        str("otherBusiness"),
+        str("currentAccount"),
+        associationsFull,
+        ref1,
+        ref2,
+        str("reason"),
+        str("socialLinks"),
+        getFileUrl(files, "profilePicture"),
+        getFileUrl(files, "aadhar"),
+        getFileUrl(files, "workspacePhoto"),
+        getFileUrl(files, "gstCertificate"),
+        getFileUrl(files, "msmeLicense"),
+        getFileUrl(files, "visitingCard"),
+        otherFiles,
+      ]
+        .map(escapeCsv)
+        .join(",");
+    });
+
+    const csvContent = "\uFEFF" + [headers.map(escapeCsv).join(","), ...rows].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `gta-membership-applications-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
-      <SectionHeading
-        title={`Membership Applications (${applications.length})`}
-        note="Track each application from submission through payment to completion."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
+        <SectionHeading
+          title={`Membership Applications (${applications.length})`}
+          note="Track each application from submission through payment to completion."
+        />
+        {applications.length > 0 && (
+          <button
+            onClick={exportToCsv}
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs uppercase tracking-wider font-semibold bg-white border border-ink/20 rounded-sm hover:border-gold hover:text-gold transition-colors text-ink shadow-sm mt-1"
+            title="Download applications with document & image URLs for Excel"
+          >
+            <Download className="h-4 w-4" />
+            Export to Excel / CSV
+          </button>
+        )}
+      </div>
 
       {/* Status filter */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
