@@ -10,11 +10,13 @@ import {
   Search,
   Trash2,
   UserPlus,
+  XCircle,
 } from "lucide-react";
 import {
   addMember,
   addMemberPayment,
   approveApplication,
+  deleteApplication,
   deleteMember,
   deleteMemberPayment,
   updateApplicationStatus,
@@ -120,6 +122,44 @@ export function ApplicationsManager({
     }
   }
 
+  async function reject(app: ApplicationRecord) {
+    if (
+      !window.confirm(
+        `Reject ${app.name || app.email}'s application? This will mark it as Rejected. You can still delete it afterwards.`,
+      )
+    )
+      return;
+    setBusyId(app.id);
+    setError(null);
+    try {
+      await updateApplicationStatus({ data: { password, id: app.id, status: "rejected" } });
+      setApplications(applications.map((a) => (a.id === app.id ? { ...a, status: "rejected" } : a)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reject application");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteApp(app: ApplicationRecord) {
+    if (
+      !window.confirm(
+        `Permanently delete ${app.name || app.email}'s application? This cannot be undone.`,
+      )
+    )
+      return;
+    setBusyId(app.id);
+    setError(null);
+    try {
+      await deleteApplication({ data: { password, id: app.id } });
+      setApplications(applications.filter((a) => a.id !== app.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete application");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div>
       <SectionHeading
@@ -215,6 +255,38 @@ export function ApplicationsManager({
                     Approve as Member
                   </button>
                 )}
+
+                {/* Reject button — only shown when not already rejected/complete */}
+                {app.status !== "rejected" && app.status !== "complete" && (
+                  <button
+                    onClick={() => void reject(app)}
+                    disabled={busy}
+                    title="Reject this application"
+                    className="inline-flex items-center gap-1.5 min-h-11 px-4 border border-destructive/40 text-destructive text-sm font-medium rounded-sm hover:bg-destructive/5 transition-colors disabled:opacity-60"
+                  >
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <XCircle className="h-4 w-4" />
+                    )}
+                    Reject
+                  </button>
+                )}
+
+                {/* Delete — permanently removes from DB */}
+                <button
+                  onClick={() => void deleteApp(app)}
+                  disabled={busy}
+                  aria-label={`Delete application from ${app.name || app.email}`}
+                  title="Permanently delete application"
+                  className="grid h-11 w-11 place-items-center text-charcoal/60 hover:text-destructive transition-colors disabled:opacity-50"
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </button>
               </div>
               {openId === app.id && <ApplicationDetail data={app.data} />}
             </li>

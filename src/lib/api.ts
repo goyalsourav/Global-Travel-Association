@@ -438,6 +438,19 @@ export const updateApplicationStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const deleteApplication = createServerFn({ method: "POST" })
+  .validator((input: { password: string; id: number }) => {
+    if (!input || typeof input.id !== "number") throw new Error("Invalid application id");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    await requireAdmin(data.password);
+    const { sql, ready } = getDb();
+    await ready;
+    await sql`DELETE FROM membership_applications WHERE id = ${data.id}`;
+    return { ok: true };
+  });
+
 // ---------- Members ----------
 
 type MemberRow = {

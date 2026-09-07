@@ -37,7 +37,7 @@ export type MemberPayment = {
 };
 
 export type ApplicationStatus =
-  "submitted" | "reviewed" | "payment_requested" | "payment_successful" | "complete";
+  "submitted" | "reviewed" | "payment_requested" | "payment_successful" | "complete" | "rejected";
 
 export const APPLICATION_STATUSES: { value: ApplicationStatus; label: string }[] = [
   { value: "submitted", label: "Submitted" },
@@ -45,6 +45,7 @@ export const APPLICATION_STATUSES: { value: ApplicationStatus; label: string }[]
   { value: "payment_requested", label: "Payment Requested" },
   { value: "payment_successful", label: "Payment Successful" },
   { value: "complete", label: "Complete" },
+  { value: "rejected", label: "Rejected" },
 ];
 
 export function applicationStatusLabel(status: string): string {
@@ -58,4 +59,5 @@ export const APPLICATION_STATUS_CLS: Record<ApplicationStatus, string> = {
   payment_requested: "bg-gold/20 text-ink border-gold/60",
   payment_successful: "bg-green-600/10 text-green-700 border-green-600/30",
   complete: "bg-ink text-gold border-ink",
+  rejected: "bg-destructive/10 text-destructive border-destructive/30",
 };

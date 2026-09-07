@@ -16,6 +16,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivitiesRouteImport } from './routes/activities'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiBlobUploadRouteImport } from './routes/api/blob-upload'
+import { Route as ApiApplicationsRouteImport } from './routes/api/applications'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -52,6 +53,11 @@ const ApiBlobUploadRoute = ApiBlobUploadRouteImport.update({
   path: '/api/blob-upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiApplicationsRoute = ApiApplicationsRouteImport.update({
+  id: '/api/applications',
+  path: '/api/applications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/members': typeof MembersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/blob-upload': typeof ApiBlobUploadRoute
+  '/api/applications': typeof ApiApplicationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/members': typeof MembersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/blob-upload': typeof ApiBlobUploadRoute
+  '/api/applications': typeof ApiApplicationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/members': typeof MembersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/blob-upload': typeof ApiBlobUploadRoute
+  '/api/applications': typeof ApiApplicationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/members'
     | '/sitemap.xml'
     | '/api/blob-upload'
+    | '/api/applications'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/members'
     | '/sitemap.xml'
     | '/api/blob-upload'
+    | '/api/applications'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/members'
     | '/sitemap.xml'
     | '/api/blob-upload'
+    | '/api/applications'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +131,7 @@ export interface RootRouteChildren {
   MembersRoute: typeof MembersRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiBlobUploadRoute: typeof ApiBlobUploadRoute
+  ApiApplicationsRoute: typeof ApiApplicationsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBlobUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/applications': {
+      id: '/api/applications'
+      path: '/api/applications'
+      fullPath: '/api/applications'
+      preLoaderRoute: typeof ApiApplicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   MembersRoute: MembersRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiBlobUploadRoute: ApiBlobUploadRoute,
+  ApiApplicationsRoute: ApiApplicationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
