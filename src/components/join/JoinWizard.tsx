@@ -184,13 +184,16 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
               <TextField
                 id="name"
                 label="Name"
+                required
                 autoComplete="name"
                 value={values.name}
                 onChange={(v) => set("name", v)}
+                error={errors.name}
               />
               <TextField
                 id="contactNumber"
                 label="Contact Number"
+                required
                 type="tel"
                 inputMode="numeric"
                 autoComplete="tel"
@@ -202,9 +205,11 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
               <TextField
                 id="designation"
                 label="Designation"
+                required
                 placeholder="e.g. Proprietor, Director"
                 value={values.designation}
                 onChange={(v) => set("designation", v)}
+                error={errors.designation}
               />
               <FileUploadField
                 id="profilePicture"
@@ -231,20 +236,25 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
               <TextField
                 id="companyName"
                 label="Company Name"
+                required
                 autoComplete="organization"
                 value={values.companyName}
                 onChange={(v) => set("companyName", v)}
+                error={errors.companyName}
               />
               <TextAreaField
                 id="officeAddress"
                 label="Office Address"
+                required
                 rows={3}
                 value={values.officeAddress}
                 onChange={(v) => set("officeAddress", v)}
+                error={errors.officeAddress}
               />
               <TextField
                 id="businessEmail"
                 label="Email ID (business)"
+                required
                 type="email"
                 inputMode="email"
                 value={values.businessEmail}
@@ -255,6 +265,7 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
                 <TextField
                   id="establishmentYear"
                   label="Establishment Year"
+                  required
                   inputMode="numeric"
                   placeholder={`1950–${new Date().getFullYear()}`}
                   value={values.establishmentYear}
@@ -264,6 +275,7 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
                 <TextField
                   id="yearsExperience"
                   label="Years of Experience in Travel Industry"
+                  required
                   inputMode="numeric"
                   value={values.yearsExperience}
                   onChange={(v) => set("yearsExperience", digitsOnly(v, 2))}
@@ -285,11 +297,9 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
                 onChange={(v) => set("otherBusiness", v)}
               />
               <YesNoField
-                label="Current Account for Business"
-                required
+                label="Registered in GST"
                 value={values.currentAccount}
                 onChange={(v) => set("currentAccount", v)}
-                error={errors.currentAccount}
               />
             </>
           )}
@@ -317,10 +327,12 @@ export function JoinWizard({ payment = defaultPayment }: { payment?: PaymentCont
               <FileUploadField
                 id="gstCertificate"
                 label="GST Certificate"
+                required
                 accept="pdf"
                 hint="PDF, up to 10 MB"
                 value={files.gstCertificate}
                 onChange={(m) => setFile("gstCertificate", m)}
+                error={errors.gstCertificate}
               />
               <FileUploadField
                 id="msmeLicense"
@@ -621,7 +633,6 @@ function AssociationsField({
     <fieldset>
       <legend className={labelCls}>
         Other associations you are associated with, and your role
-        <span className="text-gold"> *</span>
       </legend>
       <div className="flex flex-wrap gap-2.5">
         {ASSOCIATION_OPTIONS.map((opt) => {
@@ -682,7 +693,7 @@ function ReasonField({
   return (
     <div>
       <label htmlFor="reason" className={labelCls}>
-        Reason to join GTA<span className="text-gold"> *</span>
+        Reason to join GTA
       </label>
       <textarea
         id="reason"
@@ -745,7 +756,7 @@ function ReviewSummary({
         ["Years of Experience", values.yearsExperience || "—"],
         ["Expertise / USP", values.expertise || "—"],
         ["Other Business", values.otherBusiness || "—"],
-        ["Current Account", values.currentAccount || "—"],
+        ["Registered in GST", values.currentAccount || "—"],
       ],
     },
     {

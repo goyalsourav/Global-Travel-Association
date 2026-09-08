@@ -113,38 +113,45 @@ export function validateStep(step: number, values: JoinValues, files: JoinFiles)
     if (!values.email.trim()) errors.email = "Please enter your email address.";
     else if (!EMAIL_RE.test(values.email.trim()))
       errors.email = "That doesn't look like a valid email — please check it.";
-    if (values.contactNumber && !PHONE_RE.test(values.contactNumber))
+    if (!values.name.trim()) errors.name = "Please enter your name.";
+    if (!values.contactNumber) errors.contactNumber = "Please enter your contact number.";
+    else if (!PHONE_RE.test(values.contactNumber))
       errors.contactNumber = "Please enter a 10-digit mobile number.";
+    if (!values.designation.trim()) errors.designation = "Please enter your designation.";
     if (!files.profilePicture) errors.profilePicture = "Please upload your profile picture.";
   }
 
   if (step === 1) {
-    if (values.businessEmail && !EMAIL_RE.test(values.businessEmail.trim()))
+    if (!values.companyName.trim()) errors.companyName = "Please enter your company name.";
+    if (!values.officeAddress.trim()) errors.officeAddress = "Please enter your office address.";
+    if (!values.businessEmail.trim()) errors.businessEmail = "Please enter your business email.";
+    else if (!EMAIL_RE.test(values.businessEmail.trim()))
       errors.businessEmail = "That doesn't look like a valid email — please check it.";
-    if (values.establishmentYear) {
+    if (!values.establishmentYear) {
+      errors.establishmentYear = "Please enter the establishment year.";
+    } else {
       const y = Number(values.establishmentYear);
       if (!Number.isInteger(y) || y < 1950 || y > currentYear)
         errors.establishmentYear = `Enter a 4-digit year between 1950 and ${currentYear}.`;
     }
-    if (values.yearsExperience) {
+    if (!values.yearsExperience) {
+      errors.yearsExperience = "Please enter your years of experience.";
+    } else {
       const n = Number(values.yearsExperience);
       if (!Number.isFinite(n) || n < 0 || n > 80)
         errors.yearsExperience = "Enter your years of experience (0–80).";
     }
-    if (!values.currentAccount)
-      errors.currentAccount = "Please tell us if you have a current account for your business.";
   }
 
   if (step === 2) {
     if (!files.aadhar) errors.aadhar = "Please upload your Aadhar card.";
+    if (!files.gstCertificate) errors.gstCertificate = "Please upload your GST certificate.";
     if (!files.msmeLicense)
       errors.msmeLicense = "Please upload your MSME / Trade License / Gomasta.";
     if (!files.visitingCard) errors.visitingCard = "Please upload your visiting card.";
   }
 
   if (step === 3) {
-    if (values.associations.length === 0)
-      errors.associations = "Select at least one association (or “Other”).";
     if (values.associations.includes("Other") && !values.associationOther.trim())
       errors.associationOther = "Please name the other association and your role.";
     if (!values.ref1Name.trim()) errors.ref1Name = "Reference 1 name is required.";
@@ -152,8 +159,7 @@ export function validateStep(step: number, values: JoinValues, files: JoinFiles)
     if (!values.ref2Name.trim()) errors.ref2Name = "Reference 2 name is required.";
     if (!PHONE_RE.test(values.ref2Phone)) errors.ref2Phone = "Enter a 10-digit contact number.";
     const words = countWords(values.reason);
-    if (words === 0) errors.reason = "Please tell us why you'd like to join GTA.";
-    else if (words > REASON_WORD_LIMIT)
+    if (words > REASON_WORD_LIMIT)
       errors.reason = `Please keep it within ${REASON_WORD_LIMIT} words.`;
   }
 
