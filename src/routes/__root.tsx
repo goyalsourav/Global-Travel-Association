@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -88,12 +89,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#111111" },
-      { property: "og:title", content: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies" },
-      { name: "twitter:title", content: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies" },
-      { property: "og:description", content: "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2024 in Chhattisgarh, uniting travel professionals PAN India through collaboration, events and ethical practice." },
-      { name: "twitter:description", content: "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2024 in Chhattisgarh, uniting travel professionals PAN India through collaboration, events and ethical practice." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/96d7bf3d-c279-4ab3-a234-87d72c2693ab/id-preview-429ca7ba--81d0b146-bb52-4a75-aebd-8701009019ab.lovable.app-1783748451021.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/96d7bf3d-c279-4ab3-a234-87d72c2693ab/id-preview-429ca7ba--81d0b146-bb52-4a75-aebd-8701009019ab.lovable.app-1783748451021.png" },
+      {
+        property: "og:title",
+        content: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies",
+      },
+      {
+        name: "twitter:title",
+        content: "Global Travel Association (GTA) — India's Trusted Alliance of Travel Agencies",
+      },
+      {
+        property: "og:description",
+        content:
+          "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2024 in Chhattisgarh, uniting travel professionals PAN India through collaboration, events and ethical practice.",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Global Travel Association (GTA) is an India-based association of travel agencies founded in 2024 in Chhattisgarh, uniting travel professionals PAN India through collaboration, events and ethical practice.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/96d7bf3d-c279-4ab3-a234-87d72c2693ab/id-preview-429ca7ba--81d0b146-bb52-4a75-aebd-8701009019ab.lovable.app-1783748451021.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/96d7bf3d-c279-4ab3-a234-87d72c2693ab/id-preview-429ca7ba--81d0b146-bb52-4a75-aebd-8701009019ab.lovable.app-1783748451021.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -122,6 +145,7 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        <Analytics />
         <Scripts />
       </body>
     </html>

@@ -134,7 +134,9 @@ export function ApplicationsManager({
     setError(null);
     try {
       await updateApplicationStatus({ data: { password, id: app.id, status: "rejected" } });
-      setApplications(applications.map((a) => (a.id === app.id ? { ...a, status: "rejected" } : a)));
+      setApplications(
+        applications.map((a) => (a.id === app.id ? { ...a, status: "rejected" } : a)),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reject application");
     } finally {
@@ -213,8 +215,7 @@ export function ApplicationsManager({
       const v = app.data?.values ?? {};
       const files = (app.data?.files ?? {}) as Record<string, unknown>;
 
-      const str = (key: string): string =>
-        typeof v[key] === "string" ? (v[key] as string) : "";
+      const str = (key: string): string => (typeof v[key] === "string" ? (v[key] as string) : "");
       const joinArr = (key: string): string =>
         Array.isArray(v[key]) ? (v[key] as string[]).join(", ") : str(key);
 
