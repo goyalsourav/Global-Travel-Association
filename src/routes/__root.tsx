@@ -15,7 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 // ─── MAINTENANCE MODE ────────────────────────────────────────────────────────
 // Set to `true` to show the maintenance page for ALL visitors.
 // Set back to `false` to restore the site.
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 function MaintenancePage() {
   return (
