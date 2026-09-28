@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -37,70 +38,93 @@ function MaintenancePage() {
       }}
     >
       {/* Animated glowing orbs */}
-      <div style={{
-        position: "absolute", width: 400, height: 400,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%)",
-        top: "10%", left: "5%", animation: "pulse 4s ease-in-out infinite",
-        pointerEvents: "none",
-      }} />
-      <div style={{
-        position: "absolute", width: 300, height: 300,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)",
-        bottom: "10%", right: "5%", animation: "pulse 5s ease-in-out infinite 1s",
-        pointerEvents: "none",
-      }} />
+      <div
+        style={{
+          position: "absolute",
+          width: 400,
+          height: 400,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%)",
+          top: "10%",
+          left: "5%",
+          animation: "pulse 4s ease-in-out infinite",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)",
+          bottom: "10%",
+          right: "5%",
+          animation: "pulse 5s ease-in-out infinite 1s",
+          pointerEvents: "none",
+        }}
+      />
 
       {/* GTA Logo / Icon */}
-      <div style={{
-        width: 90, height: 90, borderRadius: "50%",
-        background: "linear-gradient(135deg, #6366f1, #a855f7)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        marginBottom: "2rem",
-        boxShadow: "0 0 40px rgba(99,102,241,0.5)",
-        fontSize: "2.2rem",
-        animation: "spin-slow 8s linear infinite",
-      }}>
+      <div
+        style={{
+          width: 90,
+          height: 90,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #6366f1, #a855f7)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "2rem",
+          boxShadow: "0 0 40px rgba(99,102,241,0.5)",
+          fontSize: "2.2rem",
+          animation: "spin-slow 8s linear infinite",
+        }}
+      >
         ✈️
       </div>
 
       {/* Headline */}
-      <h1 style={{
-        fontSize: "clamp(2rem, 5vw, 3.5rem)",
-        fontWeight: 700,
-        letterSpacing: "-0.02em",
-        marginBottom: "0.5rem",
-        background: "linear-gradient(90deg, #e0e7ff, #c4b5fd, #e0e7ff)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-      }}>
+      <h1
+        style={{
+          fontSize: "clamp(2rem, 5vw, 3.5rem)",
+          fontWeight: 700,
+          letterSpacing: "-0.02em",
+          marginBottom: "0.5rem",
+          background: "linear-gradient(90deg, #e0e7ff, #c4b5fd, #e0e7ff)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
         We'll be back soon!
       </h1>
 
       {/* Sub-headline */}
-      <p style={{
-        fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
-        color: "rgba(255,255,255,0.6)",
-        maxWidth: 520,
-        marginBottom: "2.5rem",
-        lineHeight: 1.7,
-      }}>
-        <strong style={{ color: "rgba(255,255,255,0.9)" }}>
-          Global Travel Association
-        </strong>{" "}
-        is currently under maintenance. We are working hard to improve your
-        experience. Please check back shortly.
+      <p
+        style={{
+          fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+          color: "rgba(255,255,255,0.6)",
+          maxWidth: 520,
+          marginBottom: "2.5rem",
+          lineHeight: 1.7,
+        }}
+      >
+        <strong style={{ color: "rgba(255,255,255,0.9)" }}>Global Travel Association</strong> is
+        currently under maintenance. We are working hard to improve your experience. Please check
+        back shortly.
       </p>
 
       {/* Divider */}
-      <div style={{
-        width: 60, height: 3,
-        background: "linear-gradient(90deg, #6366f1, #a855f7)",
-        borderRadius: 2,
-        marginBottom: "2rem",
-      }} />
+      <div
+        style={{
+          width: 60,
+          height: 3,
+          background: "linear-gradient(90deg, #6366f1, #a855f7)",
+          borderRadius: 2,
+          marginBottom: "2rem",
+        }}
+      />
 
       {/* Contact hint */}
       <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.4)" }}>
@@ -261,6 +285,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <body>
         {children}
         <Analytics />
+        <SpeedInsights />
         <Scripts />
       </body>
     </html>
