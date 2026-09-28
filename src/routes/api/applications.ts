@@ -79,10 +79,8 @@ export const Route = createFileRoute("/api/applications")({
             return "";
           };
 
-          const ref1 =
-            [str("ref1Name"), str("ref1Phone")].filter(Boolean).join(" · ") || "—";
-          const ref2 =
-            [str("ref2Name"), str("ref2Phone")].filter(Boolean).join(" · ") || "—";
+          const ref1 = [str("ref1Name"), str("ref1Phone")].filter(Boolean).join(" · ") || "—";
+          const ref2 = [str("ref2Name"), str("ref2Phone")].filter(Boolean).join(" · ") || "—";
 
           const associations = joinArr("associations");
           const assocOther = str("associationOther");
