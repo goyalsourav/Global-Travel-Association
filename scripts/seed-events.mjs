@@ -2,7 +2,7 @@
 // them at the top of the display order (sort_order 1-6). Any events that
 // already exist are bumped after them. Run with: node scripts/seed-events.mjs
 // Safe to re-run: skips if any of the original titles already exist.
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import { readFileSync } from "fs";
 
 const env = readFileSync(new URL("../.env", import.meta.url), "utf8");
@@ -11,7 +11,7 @@ if (!match) {
   console.error("DATABASE_URL not found in .env");
   process.exit(1);
 }
-const sql = neon(match[1].trim());
+const sql = postgres(match[1].trim(), { ssl: "require", prepare: false });
 
 const originals = [
   {
@@ -75,3 +75,4 @@ for (let i = 0; i < originals.length; i++) {
   `;
 }
 console.log(`seeded ${originals.length} original events at the top of the order.`);
+await sql.end();

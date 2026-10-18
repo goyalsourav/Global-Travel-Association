@@ -1,8 +1,47 @@
 // Server functions (TanStack Start RPC). Public reads degrade gracefully when
-// the database isn't configured yet so the site still renders with defaults.
+// the blob store isn't configured yet so the site still renders with defaults.
 import { createServerFn } from "@tanstack/react-start";
 import { del } from "@vercel/blob";
-import { getDb, isDbConfigured, requireAdmin, setAdminPassword } from "@/server/db";
+import {
+  isDbConfigured,
+  requireAdmin,
+  setAdminPassword,
+  // site content
+  getSiteContentRows,
+  upsertSiteContent,
+  // events
+  getEventRows,
+  insertEvent,
+  updateEvent as updateEventInStore,
+  reorderEvents as reorderEventsInStore,
+  deleteEventRow,
+  // founding members
+  getFoundingMemberRows,
+  insertFoundingMember,
+  updateFoundingMember as updateFoundingMemberInStore,
+  deleteFoundingMemberRow,
+  // applications
+  getApplicationRows,
+  insertApplication,
+  updateApplicationStatus as updateApplicationStatusInStore,
+  getApplicationById,
+  deleteApplicationRow,
+  // members
+  getMemberRows,
+  getPublicMemberRows,
+  insertMember,
+  updateMemberRow,
+  getMemberByEmail,
+  deleteMemberRow,
+  // payments
+  getPaymentRows,
+  insertPayment,
+  deletePaymentRow,
+  type EventRow,
+  type FoundingMemberRow,
+  type MemberRow,
+  type PaymentRow,
+} from "@/server/blob-store";
 import type {
   AboutContent,
   Bearer,
@@ -23,23 +62,53 @@ import type {
 } from "@/data/members";
 import { APPLICATION_STATUSES } from "@/data/members";
 
-type EventRow = {
-  id: number;
-  title: string;
-  description: string;
-  image_url: string;
-  image_urls: string[] | null;
-  created_at: string;
-};
+// ---------------------------------------------------------------------------
+// Row → domain type converters
+// ---------------------------------------------------------------------------
 
 function rowToEvent(r: EventRow): GtaEvent {
-  // Rows created before the gallery existed fall back to the single image_url.
   const gallery = Array.isArray(r.image_urls) ? r.image_urls.filter(Boolean) : [];
   return {
     id: r.id,
     title: r.title,
     description: r.description,
     imageUrls: gallery.length > 0 ? gallery : r.image_url ? [r.image_url] : [],
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+function rowToFounding(r: FoundingMemberRow): FoundingMember {
+  return {
+    id: r.id,
+    name: r.name,
+    imageUrl: r.image_url,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+function rowToMember(r: MemberRow): Member {
+  return {
+    id: r.id,
+    name: r.name,
+    firmName: r.firm_name,
+    contact: r.contact,
+    email: r.email,
+    city: r.city,
+    status: r.status,
+    paymentStatus: r.payment_status,
+    paidAt: r.paid_at ? new Date(r.paid_at).toISOString() : null,
+    applicationId: r.application_id,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+function rowToPayment(r: PaymentRow): MemberPayment {
+  return {
+    id: r.id,
+    memberId: r.member_id,
+    amount: Number(r.amount),
+    paidOn: String(r.paid_on).slice(0, 10),
+    note: r.note,
     createdAt: new Date(r.created_at).toISOString(),
   };
 }
@@ -51,21 +120,16 @@ function validateImageUrls(imageUrls: unknown): string[] {
   return urls;
 }
 
-// ---------- Public reads ----------
+// ---------------------------------------------------------------------------
+// Public reads
+// ---------------------------------------------------------------------------
 
 export const getSiteContent = createServerFn({ method: "GET" }).handler(
   async (): Promise<SiteContent> => {
     if (!isDbConfigured()) return defaultSiteContent;
     try {
-      const { sql, ready } = getDb();
-      await ready;
-      const rows = (await sql`SELECT key, value FROM site_content`) as {
-        key: string;
-        value: unknown;
-      }[];
+      const rows = await getSiteContentRows();
       const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-      // Spread stored values over the defaults so rows saved before a field
-      // existed (e.g. about.image) still pick up the default for it.
       return {
         about: { ...defaultSiteContent.about, ...((byKey.about as Partial<AboutContent>) ?? {}) },
         bearers: (byKey.bearers as Bearer[]) ?? defaultSiteContent.bearers,
@@ -89,12 +153,7 @@ export const getEvents = createServerFn({ method: "GET" }).handler(
   async (): Promise<GtaEvent[]> => {
     if (!isDbConfigured()) return [];
     try {
-      const { sql, ready } = getDb();
-      await ready;
-      const rows = (await sql`
-        SELECT id, title, description, image_url, image_urls, created_at
-        FROM events ORDER BY sort_order ASC, id ASC
-      `) as EventRow[];
+      const rows = await getEventRows();
       return rows.map(rowToEvent);
     } catch (err) {
       console.error("getEvents failed, returning none:", err);
@@ -103,34 +162,15 @@ export const getEvents = createServerFn({ method: "GET" }).handler(
   },
 );
 
-// ---------- Founding members ----------
-
-type FoundingRow = {
-  id: number;
-  name: string;
-  image_url: string;
-  created_at: string;
-};
-
-function rowToFounding(r: FoundingRow): FoundingMember {
-  return {
-    id: r.id,
-    name: r.name,
-    imageUrl: r.image_url,
-    createdAt: new Date(r.created_at).toISOString(),
-  };
-}
+// ---------------------------------------------------------------------------
+// Founding members
+// ---------------------------------------------------------------------------
 
 export const getFoundingMembers = createServerFn({ method: "GET" }).handler(
   async (): Promise<FoundingMember[]> => {
     if (!isDbConfigured()) return [];
     try {
-      const { sql, ready } = getDb();
-      await ready;
-      const rows = (await sql`
-        SELECT id, name, image_url, created_at
-        FROM founding_members ORDER BY sort_order ASC, id ASC
-      `) as FoundingRow[];
+      const rows = await getFoundingMemberRows();
       return rows.map(rowToFounding);
     } catch (err) {
       console.error("getFoundingMembers failed, returning none:", err);
@@ -146,15 +186,8 @@ export const addFoundingMember = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }): Promise<FoundingMember> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      INSERT INTO founding_members (name, image_url, sort_order)
-      VALUES (${data.name.trim()}, ${data.imageUrl ?? ""},
-              (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM founding_members))
-      RETURNING id, name, image_url, created_at
-    `) as FoundingRow[];
-    return rowToFounding(rows[0]);
+    const row = await insertFoundingMember(data.name.trim(), data.imageUrl ?? "");
+    return rowToFounding(row);
   });
 
 export const updateFoundingMember = createServerFn({ method: "POST" })
@@ -164,33 +197,22 @@ export const updateFoundingMember = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }): Promise<FoundingMember> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      UPDATE founding_members
-      SET name = ${data.name.trim()}, image_url = ${data.imageUrl ?? ""}
-      WHERE id = ${data.id}
-      RETURNING id, name, image_url, created_at
-    `) as FoundingRow[];
-    if (!rows[0]) throw new Error("Founding member not found");
-    return rowToFounding(rows[0]);
+    const row = await updateFoundingMemberInStore(data.id, data.name.trim(), data.imageUrl ?? "");
+    return rowToFounding(row);
   });
 
 export const deleteFoundingMember = createServerFn({ method: "POST" })
   .validator((input: { password: string; id: number }) => input)
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      DELETE FROM founding_members WHERE id = ${data.id} RETURNING image_url
-    `) as { image_url: string }[];
-    // Remove the uploaded photo from storage as well.
-    await deleteBlobUrls(rows.map((r) => r.image_url).filter(Boolean));
+    const { image_url } = await deleteFoundingMemberRow(data.id);
+    await deleteBlobUrls([image_url].filter(Boolean));
     return { ok: true };
   });
 
-// ---------- Membership application ----------
+// ---------------------------------------------------------------------------
+// Membership application
+// ---------------------------------------------------------------------------
 
 export type ApplicationFileMeta = { url: string; name: string; size: number; type: string };
 
@@ -216,17 +238,12 @@ export const submitApplication = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      INSERT INTO membership_applications (email, name, data)
-      VALUES (${data.email}, ${data.name || null}, ${JSON.stringify(data.data)})
-      RETURNING id
-    `) as { id: number }[];
-    return { id: rows[0].id };
+    return insertApplication(data.email, data.name || null, data.data);
   });
 
-// ---------- Admin ----------
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
 
 export const adminVerify = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
@@ -235,9 +252,6 @@ export const adminVerify = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Best-effort removal of admin uploads from Vercel Blob. External URLs (e.g.
-// the default Unsplash images) and failures are ignored so content operations
-// never block on storage cleanup.
 async function deleteBlobUrls(urls: string[]): Promise<void> {
   const blobUrls = urls.filter((u) => {
     try {
@@ -254,8 +268,6 @@ async function deleteBlobUrls(urls: string[]): Promise<void> {
   }
 }
 
-// Called from the admin editors when an image is replaced or removed, so the
-// old file doesn't linger in storage.
 export const deleteUploadedFiles = createServerFn({ method: "POST" })
   .validator((input: { password: string; urls: string[] }) => {
     if (!Array.isArray(input.urls)) throw new Error("Invalid file list");
@@ -295,13 +307,7 @@ export const saveSiteContent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    await sql`
-      INSERT INTO site_content (key, value, updated_at)
-      VALUES (${data.key}, ${JSON.stringify(data.value)}, now())
-      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
-    `;
+    await upsertSiteContent(data.key, data.value);
     return { ok: true };
   });
 
@@ -316,18 +322,8 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
     const urls = validateImageUrls(data.imageUrls);
-    const { sql, ready } = getDb();
-    await ready;
-    // New events append at the end of the display order; admin can reorder.
-    // image_url mirrors the first gallery image (the cover) for older readers.
-    const rows = (await sql`
-      INSERT INTO events (title, description, image_url, image_urls, sort_order)
-      VALUES (${data.title.trim()}, ${data.description.trim()}, ${urls[0]},
-              ${JSON.stringify(urls)},
-              (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM events))
-      RETURNING id, title, description, image_url, image_urls, created_at
-    `) as EventRow[];
-    return rowToEvent(rows[0]);
+    const row = await insertEvent(data.title.trim(), data.description.trim(), urls[0], urls);
+    return rowToEvent(row);
   });
 
 export const reorderEvents = createServerFn({ method: "POST" })
@@ -339,13 +335,7 @@ export const reorderEvents = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    await Promise.all(
-      data.orderedIds.map(
-        (id, index) => sql`UPDATE events SET sort_order = ${index + 1} WHERE id = ${id}`,
-      ),
-    );
+    await reorderEventsInStore(data.orderedIds);
     return { ok: true };
   });
 
@@ -366,14 +356,7 @@ export const updateEvent = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
     const urls = validateImageUrls(data.imageUrls);
-    const { sql, ready } = getDb();
-    await ready;
-    await sql`
-      UPDATE events
-      SET title = ${data.title.trim()}, description = ${data.description.trim()},
-          image_url = ${urls[0]}, image_urls = ${JSON.stringify(urls)}
-      WHERE id = ${data.id}
-    `;
+    await updateEventInStore(data.id, data.title.trim(), data.description.trim(), urls[0], urls);
     return { ok: true };
   });
 
@@ -381,17 +364,10 @@ export const deleteEvent = createServerFn({ method: "POST" })
   .validator((input: { password: string; id: number }) => input)
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      DELETE FROM events WHERE id = ${data.id} RETURNING image_url, image_urls
-    `) as { image_url: string; image_urls: string[] | null }[];
-    // Remove the event's uploaded images from storage as well.
+    const { image_url, image_urls } = await deleteEventRow(data.id);
     const urls = new Set<string>();
-    for (const r of rows) {
-      if (r.image_url) urls.add(r.image_url);
-      for (const u of r.image_urls ?? []) if (u) urls.add(u);
-    }
+    if (image_url) urls.add(image_url);
+    for (const u of image_urls ?? []) if (u) urls.add(u);
     await deleteBlobUrls([...urls]);
     return { ok: true };
   });
@@ -400,25 +376,13 @@ export const getApplications = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
   .handler(async ({ data }): Promise<ApplicationRecord[]> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      SELECT id, email, name, data, status, created_at
-      FROM membership_applications ORDER BY created_at DESC
-    `) as {
-      id: number;
-      email: string;
-      name: string | null;
-      data: ApplicationData;
-      status: ApplicationStatus;
-      created_at: string;
-    }[];
+    const rows = await getApplicationRows();
     return rows.map((r) => ({
       id: r.id,
       email: r.email,
       name: r.name,
-      data: r.data,
-      status: r.status,
+      data: r.data as ApplicationData,
+      status: r.status as ApplicationStatus,
       createdAt: new Date(r.created_at).toISOString(),
     }));
   });
@@ -432,9 +396,7 @@ export const updateApplicationStatus = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    await sql`UPDATE membership_applications SET status = ${data.status} WHERE id = ${data.id}`;
+    await updateApplicationStatusInStore(data.id, data.status);
     return { ok: true };
   });
 
@@ -445,55 +407,19 @@ export const deleteApplication = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    await sql`DELETE FROM membership_applications WHERE id = ${data.id}`;
+    await deleteApplicationRow(data.id);
     return { ok: true };
   });
 
-// ---------- Members ----------
+// ---------------------------------------------------------------------------
+// Members
+// ---------------------------------------------------------------------------
 
-type MemberRow = {
-  id: number;
-  name: string;
-  firm_name: string;
-  contact: string;
-  email: string;
-  city: string;
-  status: MemberStatus;
-  payment_status: PaymentStatus;
-  paid_at: string | null;
-  application_id: number | null;
-  created_at: string;
-};
-
-function rowToMember(r: MemberRow): Member {
-  return {
-    id: r.id,
-    name: r.name,
-    firmName: r.firm_name,
-    contact: r.contact,
-    email: r.email,
-    city: r.city,
-    status: r.status,
-    paymentStatus: r.payment_status,
-    paidAt: r.paid_at ? new Date(r.paid_at).toISOString() : null,
-    applicationId: r.application_id,
-    createdAt: new Date(r.created_at).toISOString(),
-  };
-}
-
-// Public directory: active members only, no contact details.
 export const getPublicMembers = createServerFn({ method: "GET" }).handler(
   async (): Promise<PublicMember[]> => {
     if (!isDbConfigured()) return [];
     try {
-      const { sql, ready } = getDb();
-      await ready;
-      const rows = (await sql`
-        SELECT id, name, firm_name, city FROM members
-        WHERE status = 'active' ORDER BY lower(firm_name) ASC
-      `) as { id: number; name: string; firm_name: string; city: string }[];
+      const rows = await getPublicMemberRows();
       return rows.map((r) => ({ id: r.id, name: r.name, firmName: r.firm_name, city: r.city }));
     } catch (err) {
       console.error("getPublicMembers failed, returning none:", err);
@@ -506,13 +432,7 @@ export const adminGetMembers = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
   .handler(async ({ data }): Promise<Member[]> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      SELECT id, name, firm_name, contact, email, city, status, payment_status, paid_at,
-             application_id, created_at
-      FROM members ORDER BY lower(name) ASC
-    `) as MemberRow[];
+    const rows = await getMemberRows();
     return rows.map(rowToMember);
   });
 
@@ -532,16 +452,14 @@ export const addMember = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<Member> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      INSERT INTO members (name, firm_name, contact, email, city)
-      VALUES (${data.name.trim()}, ${data.firmName.trim()}, ${data.contact.trim()},
-              ${data.email.trim()}, ${data.city?.trim() ?? ""})
-      RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
-                application_id, created_at
-    `) as MemberRow[];
-    return rowToMember(rows[0]);
+    const row = await insertMember(
+      data.name.trim(),
+      data.firmName.trim(),
+      data.contact.trim(),
+      data.email.trim(),
+      data.city?.trim() ?? "",
+    );
+    return rowToMember(row);
   });
 
 export const updateMember = createServerFn({ method: "POST" })
@@ -571,94 +489,41 @@ export const updateMember = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<Member> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    if (data.status) {
-      await sql`UPDATE members SET status = ${data.status} WHERE id = ${data.id}`;
-    }
+    const patch: Partial<Omit<MemberRow, "id" | "created_at">> = {};
+    if (data.status) patch.status = data.status;
     if (data.paymentStatus) {
-      await sql`
-        UPDATE members
-        SET payment_status = ${data.paymentStatus},
-            paid_at = ${data.paymentStatus === "paid" ? new Date().toISOString() : null}
-        WHERE id = ${data.id}
-      `;
+      patch.payment_status = data.paymentStatus;
+      patch.paid_at = data.paymentStatus === "paid" ? new Date().toISOString() : null;
     }
-    // Detail edits: undefined leaves a column untouched (COALESCE skips NULL),
-    // while an empty string clears it.
-    const norm = (v?: string) => (v === undefined ? null : v.trim());
-    if (
-      [data.name, data.firmName, data.contact, data.email, data.city].some((v) => v !== undefined)
-    ) {
-      await sql`
-        UPDATE members
-        SET name = COALESCE(${norm(data.name)}, name),
-            firm_name = COALESCE(${norm(data.firmName)}, firm_name),
-            contact = COALESCE(${norm(data.contact)}, contact),
-            email = COALESCE(${norm(data.email)}, email),
-            city = COALESCE(${norm(data.city)}, city)
-        WHERE id = ${data.id}
-      `;
-    }
-    const rows = (await sql`
-      SELECT id, name, firm_name, contact, email, city, status, payment_status, paid_at,
-             application_id, created_at
-      FROM members WHERE id = ${data.id}
-    `) as MemberRow[];
-    if (!rows[0]) throw new Error("Member not found");
-    return rowToMember(rows[0]);
+    if (data.name !== undefined) patch.name = data.name.trim();
+    if (data.firmName !== undefined) patch.firm_name = data.firmName.trim();
+    if (data.contact !== undefined) patch.contact = data.contact.trim();
+    if (data.email !== undefined) patch.email = data.email.trim();
+    if (data.city !== undefined) patch.city = data.city.trim();
+    const row = await updateMemberRow(data.id, patch);
+    return rowToMember(row);
   });
 
 export const deleteMember = createServerFn({ method: "POST" })
   .validator((input: { password: string; id: number }) => input)
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    await sql`DELETE FROM members WHERE id = ${data.id}`;
+    await deleteMemberRow(data.id);
     return { ok: true };
   });
 
-// ---------- Member payment ledger ----------
-
-type PaymentRow = {
-  id: number;
-  member_id: number;
-  amount: string | number;
-  paid_on: string | Date;
-  note: string;
-  created_at: string;
-};
-
-function rowToPayment(r: PaymentRow): MemberPayment {
-  const paidOn =
-    r.paid_on instanceof Date
-      ? r.paid_on.toISOString().slice(0, 10)
-      : String(r.paid_on).slice(0, 10);
-  return {
-    id: r.id,
-    memberId: r.member_id,
-    amount: Number(r.amount),
-    paidOn,
-    note: r.note,
-    createdAt: new Date(r.created_at).toISOString(),
-  };
-}
+// ---------------------------------------------------------------------------
+// Member payment ledger
+// ---------------------------------------------------------------------------
 
 export const adminGetPayments = createServerFn({ method: "POST" })
   .validator((input: { password: string }) => input)
   .handler(async ({ data }): Promise<MemberPayment[]> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      SELECT id, member_id, amount, paid_on, note, created_at
-      FROM member_payments ORDER BY paid_on DESC, id DESC
-    `) as PaymentRow[];
+    const rows = await getPaymentRows();
     return rows.map(rowToPayment);
   });
 
-// Recording a payment also marks the member as paid (paid_at = payment date).
 export const addMemberPayment = createServerFn({ method: "POST" })
   .validator(
     (input: {
@@ -679,75 +544,49 @@ export const addMemberPayment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ payment: MemberPayment; member: Member }> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const rows = (await sql`
-      INSERT INTO member_payments (member_id, amount, paid_on, note)
-      VALUES (${data.memberId}, ${data.amount}, ${data.paidOn}, ${data.note?.trim() ?? ""})
-      RETURNING id, member_id, amount, paid_on, note, created_at
-    `) as PaymentRow[];
-    const memberRows = (await sql`
-      UPDATE members SET payment_status = 'paid', paid_at = ${data.paidOn}
-      WHERE id = ${data.memberId}
-      RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
-                application_id, created_at
-    `) as MemberRow[];
-    if (!memberRows[0]) throw new Error("Member not found");
-    return { payment: rowToPayment(rows[0]), member: rowToMember(memberRows[0]) };
+    const paymentRow = await insertPayment(
+      data.memberId,
+      data.amount,
+      data.paidOn,
+      data.note?.trim() ?? "",
+    );
+    const memberRow = await updateMemberRow(data.memberId, {
+      payment_status: "paid",
+      paid_at: data.paidOn,
+    });
+    return { payment: rowToPayment(paymentRow), member: rowToMember(memberRow) };
   });
 
 export const deleteMemberPayment = createServerFn({ method: "POST" })
   .validator((input: { password: string; id: number }) => input)
   .handler(async ({ data }) => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    await sql`DELETE FROM member_payments WHERE id = ${data.id}`;
+    await deletePaymentRow(data.id);
     return { ok: true };
   });
 
-// Approve an application: create a member from the answers (if one with the
-// same email doesn't already exist) and move the application to "reviewed".
 export const approveApplication = createServerFn({ method: "POST" })
   .validator((input: { password: string; applicationId: number }) => input)
   .handler(async ({ data }): Promise<Member> => {
     await requireAdmin(data.password);
-    const { sql, ready } = getDb();
-    await ready;
-    const apps = (await sql`
-      SELECT id, email, name, data, status FROM membership_applications
-      WHERE id = ${data.applicationId}
-    `) as {
-      id: number;
-      email: string;
-      name: string | null;
-      data: ApplicationData;
-      status: string;
-    }[];
-    const app = apps[0];
+    const app = await getApplicationById(data.applicationId);
     if (!app) throw new Error("Application not found");
 
-    const existing = (await sql`
-      SELECT id, name, firm_name, contact, email, city, status, payment_status, paid_at,
-             application_id, created_at
-      FROM members WHERE lower(email) = ${app.email.toLowerCase()} LIMIT 1
-    `) as MemberRow[];
-    if (existing[0]) return rowToMember(existing[0]);
+    const existing = await getMemberByEmail(app.email);
+    if (existing) return rowToMember(existing);
 
-    const values = app.data?.values ?? {};
+    const appData = app.data as ApplicationData;
+    const values = appData?.values ?? {};
     const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
     const name = str(values.name) || app.name || app.email;
     const firm = str(values.companyName);
     const contact = str(values.contactNumber);
 
-    const rows = (await sql`
-      INSERT INTO members (name, firm_name, contact, email, application_id)
-      VALUES (${name}, ${firm}, ${contact}, ${app.email}, ${app.id})
-      RETURNING id, name, firm_name, contact, email, city, status, payment_status, paid_at,
-                application_id, created_at
-    `) as MemberRow[];
+    const memberRow = await insertMember(name, firm, contact, app.email, "", app.id);
+
     if (app.status === "submitted" || app.status === "reviewed") {
-      await sql`UPDATE membership_applications SET status = 'approved' WHERE id = ${app.id}`;
+      await updateApplicationStatusInStore(app.id, "approved");
     }
-    return rowToMember(rows[0]);
+
+    return rowToMember(memberRow);
   });

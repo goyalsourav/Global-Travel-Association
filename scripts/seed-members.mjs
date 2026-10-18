@@ -1,6 +1,6 @@
 // One-time member seeding. Run with: node scripts/seed-members.mjs
 // Skips seeding if the members table already has rows (safe to re-run).
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 import { readFileSync } from "fs";
 
 const env = readFileSync(new URL("../.env", import.meta.url), "utf8");
@@ -9,7 +9,7 @@ if (!match) {
   console.error("DATABASE_URL not found in .env");
   process.exit(1);
 }
-const sql = neon(match[1].trim());
+const sql = postgres(match[1].trim(), { ssl: "require", prepare: false });
 
 const members = [
   ["MANISH JAIN", "MANISH JAIN HOLIDAYS", "7770987654", "MANISHJAINHOLIDAYS@GMAIL.COM"],
@@ -101,3 +101,4 @@ for (const [name, firm, contact, email] of members) {
   `;
 }
 console.log(`seeded ${members.length} members (all active).`);
+await sql.end();

@@ -6,7 +6,7 @@
 // Authentication: pass APPLICATIONS_API_KEY value in the x-api-key header.
 // Filtering:      pass ?since_id=N to only receive applications with id > N.
 import { createFileRoute } from "@tanstack/react-router";
-import { getDb } from "@/server/db";
+import { getApplicationRows } from "@/server/blob-store";
 import { applicationStatusLabel } from "@/data/members";
 
 type AppRow = {
@@ -49,15 +49,9 @@ export const Route = createFileRoute("/api/applications")({
           );
         }
 
-        // ── DB query ─────────────────────────────────────────────────────────
-        const { sql, ready } = getDb();
-        await ready;
-        const rows = (await sql`
-          SELECT id, email, name, status, data, created_at
-          FROM membership_applications
-          WHERE id > ${sinceId}
-          ORDER BY id ASC
-        `) as AppRow[];
+        // ── Blob query ────────────────────────────────────────────────────────
+        const allRows = await getApplicationRows();
+        const rows = (allRows as AppRow[]).filter((r) => r.id > sinceId);
 
         // ── Flatten for easy sheet & excel consumption ──────────────────────
         const result = rows.map((row) => {
