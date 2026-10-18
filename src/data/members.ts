@@ -69,4 +69,3 @@ export const APPLICATION_STATUS_CLS: Record<ApplicationStatus, string> = {
   complete: "bg-ink text-gold border-ink",
   rejected: "bg-destructive/10 text-destructive border-destructive/30",
 };
-
