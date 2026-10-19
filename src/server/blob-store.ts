@@ -118,6 +118,7 @@ async function writeCollection<K extends keyof StoreMap>(
     contentType: "application/json",
     token,
     addRandomSuffix: false, // deterministic key so we always overwrite the same file
+    allowOverwrite: true,
   });
   // Invalidate cache so the next read reflects the new data.
   _cache.set(name, data);

@@ -65,6 +65,7 @@ async function uploadJson(name, data) {
     contentType: "application/json",
     token: BLOB_TOKEN,
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   console.log(`  ✓  ${name}.json  (${data.length} rows) → ${res.url}`);
 }
